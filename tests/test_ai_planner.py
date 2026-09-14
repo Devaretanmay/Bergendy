@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock
 
-from koyote.ai_planner import AIPatchPlanner, parse_confidence, parse_search_replace_blocks
-from koyote.llm import LLMClient, LLMResponse
+from boundary.ai_planner import AIPatchPlanner, parse_confidence, parse_search_replace_blocks
+from boundary.llm import LLMClient, LLMResponse
 
 
 class TestAIPatchPlanner(unittest.TestCase):

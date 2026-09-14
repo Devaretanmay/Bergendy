@@ -1,11 +1,11 @@
-# Copyright 2026 Koyote Authors
+# Copyright 2026 Boundary Authors
 """Incremental indexing: fresh-skip, change detection, discovery deltas."""
 
 import os
 import shutil
 import time
 
-from koyote.audit import changed_since_index, read_index_state, run_audit
+from boundary.audit import changed_since_index, read_index_state, run_audit
 
 
 def _seed_repo(dst: str):

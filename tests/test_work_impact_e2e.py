@@ -1,4 +1,4 @@
-# Copyright 2026 Koyote Authors
+# Copyright 2026 Boundary Authors
 # SPDX-License-Identifier: Apache-2.0
 """Authoritative E2E: real matcher, real candidate machine, real assess path.
 
@@ -12,11 +12,11 @@ import os
 import re
 import time
 
-from koyote import cross_repo, work_graph
-from koyote.github.pr_bot import handle_push_event
-from koyote.github.provisioning import cached_path
-from koyote.github.push_events import parse_push_payload
-from koyote.llm import LLMClient, LLMResponse
+from boundary import cross_repo, work_graph
+from boundary.github.pr_bot import handle_push_event
+from boundary.github.provisioning import cached_path
+from boundary.github.push_events import parse_push_payload
+from boundary.llm import LLMClient, LLMResponse
 
 
 class FakeClient:
@@ -36,14 +36,14 @@ class FakeClient:
 
 
 def _env(tmp_path, monkeypatch):
-    monkeypatch.setenv("KOYOTE_WORK_GRAPH_FILE", str(tmp_path / "wg.json"))
-    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "installs"))
-    monkeypatch.setenv("KOYOTE_REPOS_DIR", str(tmp_path / "repos"))
-    monkeypatch.setenv("KOYOTE_DIR", str(tmp_path / "home"))
+    monkeypatch.setenv("BOUNDARY_WORK_GRAPH_FILE", str(tmp_path / "wg.json"))
+    monkeypatch.setenv("BOUNDARY_INSTALLATIONS_DIR", str(tmp_path / "installs"))
+    monkeypatch.setenv("BOUNDARY_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("BOUNDARY_DIR", str(tmp_path / "home"))
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test_e2e_only")
     for d in ("installs", "repos", "home"):
         os.makedirs(os.path.join(str(tmp_path), d), exist_ok=True)
-    with open(os.path.join(os.environ["KOYOTE_INSTALLATIONS_DIR"], "1.json"), "w") as f:
+    with open(os.path.join(os.environ["BOUNDARY_INSTALLATIONS_DIR"], "1.json"), "w") as f:
         json.dump({"installation_id": "1", "repos": {
             "acme/api-service": {"state": "READY"},
             "acme/admin": {"state": "READY"},

@@ -3,8 +3,8 @@
 import shutil
 import tempfile
 
-from koyote.engine.lane import LaneManager, LaneStatus
-from koyote.engine.integration import IntegrationEngine
+from boundary.engine.lane import LaneManager, LaneStatus
+from boundary.engine.integration import IntegrationEngine
 
 def test_lane_manager_lifecycle():
     tmp_dir = tempfile.mkdtemp()

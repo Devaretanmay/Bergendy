@@ -2,7 +2,7 @@
 
 Version: 0.1 (draft)
 Status: open for comment
-Maintainer: Koyote Labs
+Maintainer: Boundary Labs
 
 ## Why this exists
 
@@ -15,7 +15,7 @@ scope an incident to "everything that one run touched."
 This spec fixes that with something git already understands: commit trailers.
 
 No new tools are required to read these trailers. `git log`, GitHub, GitLab,
-and every code host render them today. Any tool - Koyote, your CI, someone
+and every code host render them today. Any tool - Boundary, your CI, someone
 else's agent harness - can write them. That's the point.
 
 ## Design rules
@@ -90,17 +90,17 @@ git log --grep "Agent-Sandbox: none"
 
 ## Compatibility
 
-Koyote v1.x emits legacy `Koyote-*` trailers (`Koyote-Execution`,
-`Koyote-Agent`, `Koyote-Compartment`, `Koyote-Security`). These map 1:1 onto
+Boundary v1.x emits legacy `Boundary-*` trailers (`Boundary-Execution`,
+`Boundary-Agent`, `Boundary-Compartment`, `Boundary-Security`). These map 1:1 onto
 the `Agent-*` fields above (earlier Volf/Sheepdog/Compart v1.x releases emitted
 the same fields under their own names; readers should accept all variants):
 
 | Legacy | Spec |
 | :--- | :--- |
-| `Koyote-Agent` | `Agent-Agent` |
-| `Koyote-Execution` | `Agent-Execution` |
-| `Compartment` → `Koyote-Compartment` | `Agent-Compartment` |
-| `Koyote-Security` | `Agent-Sandbox` |
+| `Boundary-Agent` | `Agent-Agent` |
+| `Boundary-Execution` | `Agent-Execution` |
+| `Compartment` → `Boundary-Compartment` | `Agent-Compartment` |
+| `Boundary-Security` | `Agent-Sandbox` |
 
 Writers SHOULD emit spec names going forward. Readers SHOULD accept both.
 
@@ -122,7 +122,7 @@ build an agent harness and start emitting these, open a PR against this file's
 
 ### Implementations
 
-- [Koyote](https://github.com/Devaretanmay/Koyote) - CLI + Python SDK, emits trailers automatically via `koyote commit`
+- [Boundary](https://github.com/Devaretanmay/Boundary) - CLI + Python SDK, emits trailers automatically via `boundary commit`
 
 ## License
 

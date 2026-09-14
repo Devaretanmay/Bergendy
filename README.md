@@ -1,21 +1,21 @@
 <div align="center">
 
-# Koyote
+# Boundary
 
-### Your codebase has a second author: the outside world. Koyote reviews its pull requests.
+### Your codebase has a second author: the outside world. Boundary reviews its pull requests.
 
 ![version](https://img.shields.io/badge/version-1.1.3-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![python](https://img.shields.io/badge/python-3.10%2B-yellow) ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 
-**APIs drift. SDKs break. Koyote detects it, repairs it, and proves it — before your CI goes red.**
+**APIs drift. SDKs break. Boundary detects it, repairs it, and proves it — before your CI goes red.**
 
 ```bash
-pip install koyote
-koyote check /path/to/your-repo   # read-only audit, no AI key needed
+pip install boundary
+boundary check /path/to/your-repo   # read-only audit, no AI key needed
 ```
 
-60 seconds to your first risk register. AI repair is opt-in (`koyote auth`).
+60 seconds to your first risk register. AI repair is opt-in (`boundary auth`).
 
-[Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md) | [Join the beta](https://github.com/Devaretanmay/Koyote/issues)
+[Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md) | [Join the beta](https://github.com/Devaretanmay/Boundary/issues)
 
 </div>
 
@@ -29,7 +29,7 @@ Software changes in two ways:
 
 Dependabot bumps version strings in lockfiles and leaves CI broken. Human engineers spend 20%+ of engineering cycles reading migration guides, mapping AST callsites, updating wrappers, and fixing broken tests.
 
-**Koyote manages software changes originating outside the repository** — mapping external contracts to internal callsites, reasoning about impact with AI, generating verified repairs, and confirming zero blast radius with sandbox isolation.
+**Boundary manages software changes originating outside the repository** — mapping external contracts to internal callsites, reasoning about impact with AI, generating verified repairs, and confirming zero blast radius with sandbox isolation.
 
 ---
 
@@ -38,7 +38,7 @@ Dependabot bumps version strings in lockfiles and leaves CI broken. Human engine
 ```text
 Any ChangeSource (Dependency release, vendor changelog, scheduled check, PR webhook)
         ↓
-AST Evidence Scan + Semantic Pattern Memory (.koyote/knowledge/)
+AST Evidence Scan + Semantic Pattern Memory (.boundary/knowledge/)
         ↓
 Shared AI Reasoning Engine (Customer BYOK Provider)
 AI reasons; native tools provide evidence and execute/verify
@@ -53,19 +53,19 @@ AI reasons; native tools provide evidence and execute/verify
 ```
 
 ```bash
-koyote auth              # Connect BYOK AI provider (Anthropic, OpenAI, Ollama)
-koyote doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
-koyote check .           # Read-only drift & impact audit
-koyote consult .         # Consult mode: AI assessment as a GitHub Issue, modifies nothing
-koyote hunt <id>         # Work mode: AI repair from a finding, sandbox verification, PR delivery
+boundary auth              # Connect BYOK AI provider (Anthropic, OpenAI, Ollama)
+boundary doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
+boundary check .           # Read-only drift & impact audit
+boundary consult .         # Consult mode: AI assessment as a GitHub Issue, modifies nothing
+boundary hunt <id>         # Work mode: AI repair from a finding, sandbox verification, PR delivery
 ```
 
 Two distinct product modes for your team:
-- **Consult** (`@howl explain` / `koyote consult`): Deep AI reasoning, architectural impact diagnosis, files a GitHub Issue, modifies zero code.
-- **Work** (`@hunt repair` / `koyote work`): Autonomous repair worker, sandbox test verification, delivers a verified PR.
+- **Consult** (`@howl explain` / `boundary consult`): Deep AI reasoning, architectural impact diagnosis, files a GitHub Issue, modifies zero code.
+- **Work** (`@hunt repair` / `boundary work`): Autonomous repair worker, sandbox test verification, delivers a verified PR.
 See [GitHub App behavior](docs/GITHUB_APP.md).
 
-Koyote also watches across connected repositories: a push in one repo is an
+Boundary also watches across connected repositories: a push in one repo is an
 observation that can confirm into a Howl Issue on another repo's affected
 work — never an automatic alert. See
 [Cross-Repository Active-Work Impact](docs/CROSS_REPO_WORK_IMPACT.md).
@@ -84,20 +84,20 @@ work — never an automatic alert. See
 
 ---
 
-## 1. Day-0 Risk Register (`koyote check`)
+## 1. Day-0 Risk Register (`boundary check`)
 
-When you run Koyote on any repository, it immediately answers:
+When you run Boundary on any repository, it immediately answers:
 - *What external APIs and SDKs does this codebase depend on?*
 - *Which integrations are deprecated, behind, or at risk?*
-- *Which breaking changes can Koyote already auto-repair?*
+- *Which breaking changes can Boundary already auto-repair?*
 
 ```bash
-koyote check .
+boundary check .
 ```
 
 ```text
 ================================================================================
-         KOYOTE: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER
+         BOUNDARY: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER
 ================================================================================
 Total External Providers Detected: 3
 Total AST Callsites Mapped:        14
@@ -106,7 +106,7 @@ Auto-Repairable Callsites:         6
 [CRITICAL] AT RISK (Action Required):
   * Stripe (stripe@v21.0.0 -> v22.0.0)
     - Status: Breaking parameter mutation detected (amount: number -> string)
-    - 4 callsites affected (4 auto-repairable by Koyote)
+    - 4 callsites affected (4 auto-repairable by Boundary)
 
 [WATCHLIST] UPCOMING DEPRECATION:
   * OpenAI (openai@v3.28.0)
@@ -121,24 +121,24 @@ Auto-Repairable Callsites:         6
 
 Export directly to GitHub Issues or JSON:
 ```bash
-koyote check . --format=github-issue   # Formatted markdown table for GitHub Issues
-koyote check . --format=json           # Machine-readable risk register
+boundary check . --format=github-issue   # Formatted markdown table for GitHub Issues
+boundary check . --format=json           # Machine-readable risk register
 ```
 
 ---
 
-## 2. External-Change Dependency Graph (`koyote graph`)
+## 2. External-Change Dependency Graph (`boundary graph`)
 
-Koyote builds a unified dependency graph linking:
+Boundary builds a unified dependency graph linking:
 `Provider -> Version -> API Contract -> Manifest Dependency -> Wrapper Client -> AST Callsite -> Migration History`
 
 ```bash
-koyote graph .
+boundary graph .
 ```
 
 ```text
 ================================================================================
-                 KOYOTE: EXTERNAL-CHANGE DEPENDENCY GRAPH                     
+                 BOUNDARY: EXTERNAL-CHANGE DEPENDENCY GRAPH                     
 ================================================================================
 Repository:              /path/to/my-repo
 Providers Ingested:      3
@@ -156,21 +156,21 @@ Active Graph Edges:      28
 
 ---
 
-## 3. Autonomous Repair (`koyote hunt`)
+## 3. Autonomous Repair (`boundary hunt`)
 
-Every `koyote check` finding carries an ID. Hunt starts from that finding —
+Every `boundary check` finding carries an ID. Hunt starts from that finding —
 rebuilding live context (branch, exact SHA, active work, callsites, tests,
 verified memory) — then reasons with AI, authors the patch with AI, verifies
 it in an isolated sandbox worktree, and refuses loudly when correctness
 cannot be established:
 
 ```bash
-koyote check .                # read-only audit; note the finding ID
-koyote hunt stripe-3a9c79     # full reasoning → repair → sandbox → verify cycle
+boundary check .                # read-only audit; note the finding ID
+boundary hunt stripe-3a9c79     # full reasoning → repair → sandbox → verify cycle
 
 # Provider-driven form (same engine, explicit target):
-koyote work . --provider stripe
-koyote work . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+boundary work . --provider stripe
+boundary work . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
 ### What Hunt guarantees:
@@ -197,15 +197,15 @@ for the full protocol.
 
 ## 4. Controlled Execution & Sandboxed Verification
 
-Koyote provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock) and Docker:
+Boundary provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock) and Docker:
 - **Zero-Exfiltration Isolation**: Credentials (`~/.ssh`, `~/.aws`, keychains) denied at the kernel boundary.
 - **Execution-Evidence Compression**: Native Rust engines distill massive test outputs down to high-signal failure traces and stack traces for PR evidence.
 - **2ms Instant Undo**: Pre-execution BLAKE3 hash snapshots enable physical rollback of modified and generated files in 2 milliseconds.
 
 ```bash
-koyote init                          # Initialize workspace control plane
-koyote diff                          # Inspect isolated execution change sets
-koyote undo                          # Instant 2ms physical rollback
+boundary init                          # Initialize workspace control plane
+boundary diff                          # Inspect isolated execution change sets
+boundary undo                          # Instant 2ms physical rollback
 ```
 
 ---
@@ -213,8 +213,8 @@ koyote undo                          # Instant 2ms physical rollback
 ## Python SDK
 
 ```python
-from koyote.graph import build_dependency_graph, audit_dependency_graph
-from koyote.maintenance import run_maintenance_cycle
+from boundary.graph import build_dependency_graph, audit_dependency_graph
+from boundary.maintenance import run_maintenance_cycle
 
 # 1. Audit repository external dependencies
 summary = audit_dependency_graph(repo_root=".")
@@ -237,41 +237,41 @@ print(report.unified_diff)
 [Quickstart Guide](docs/QUICKSTART.md) · [CLI Reference](docs/CLI.md) · [Architecture](docs/ARCHITECTURE.md) · [API Reference](docs/API_REFERENCE.md) · [Validation Guide](docs/VALIDATION_GUIDE.md) · [Agent Governance & Trailers](SPEC.md)
 
 The core abstraction is `ChangeSource` (external API, SDK, OpenAPI, GraphQL, protobuf, webhook,
-MCP server, internal service): Koyote keeps software working when the systems around it change.
+MCP server, internal service): Boundary keeps software working when the systems around it change.
 Vendor SDK migrations are the working wedge; other contract kinds are representable types with no
 connectors yet — they fail closed to quarantine instead of guessing.
 
-Under the hood, Koyote is an AI maintenance agent with deterministic tools: a code graph,
+Under the hood, Boundary is an AI maintenance agent with deterministic tools: a code graph,
 verified maintenance memory (trusted successes plus a failure avoid-list),
 sandbox execution, and a fail-closed verifier.
 Repeated work reuses verified knowledge instead of re-reasoning, so the system gets faster,
 cheaper, and more precise the longer it watches a repository.
 
-## Where Koyote Fits
+## Where Boundary Fits
 
 Conventional AI reviewers start from a human pull request and ask whether the change
-is correct. Koyote starts from the other end: a dependency or contract changed out
+is correct. Boundary starts from the other end: a dependency or contract changed out
 in the world, and it asks what that breaks in your repository. One AI reasons over
 your codebase plus the change itself, backed by maintenance memory — past verified
 repairs and quarantined failures. The output is not a review but a repair, proven
 against your real test suite before it ever reaches a pull request.
 
-Koyote is not a generic coding agent, a PR reviewer, a Dependabot clone, a
+Boundary is not a generic coding agent, a PR reviewer, a Dependabot clone, a
 codebase Q&A tool, or vulnerability-management software. It is autonomous
 maintenance for systems that change.
 
 The old fable got it backwards: the village stopped believing because the boy
 cried wolf over nothing. Most automation still does — vague green checks,
-unverified badges, silent passes. Koyote only howls when there's actually
+unverified badges, silent passes. Boundary only howls when there's actually
 one in the fence: verified repairs, loud refusals, never a faked pass.
 
 ## Beta
 
-Koyote is in private beta. The fastest way in: run `koyote check` on your
-repo and [open an issue](https://github.com/Devaretanmay/Koyote/issues) with
+Boundary is in private beta. The fastest way in: run `boundary check` on your
+repo and [open an issue](https://github.com/Devaretanmay/Boundary/issues) with
 what it found — misses and false alarms included. That feedback is the roadmap.
 
 ## License
 
-Apache-2.0. Copyright 2026 Koyote Authors.
+Apache-2.0. Copyright 2026 Boundary Authors.
 

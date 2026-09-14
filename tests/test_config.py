@@ -3,9 +3,9 @@ import shutil
 import tempfile
 import textwrap
 
-from koyote.config import (
+from boundary.config import (
     load_config,
-    is_koyote_workspace,
+    is_boundary_workspace,
     find_workspace_root,
 )
 
@@ -75,12 +75,12 @@ def test_policy_for_agent():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def test_is_koyote_workspace():
+def test_is_boundary_workspace():
     tmp = tempfile.mkdtemp()
     try:
-        assert not is_koyote_workspace(tmp)
-        os.makedirs(os.path.join(tmp, ".koyote"))
-        assert is_koyote_workspace(tmp)
+        assert not is_boundary_workspace(tmp)
+        os.makedirs(os.path.join(tmp, ".boundary"))
+        assert is_boundary_workspace(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -88,7 +88,7 @@ def test_is_koyote_workspace():
 def test_find_workspace_root_traversal():
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".koyote"))
+        os.makedirs(os.path.join(tmp, ".boundary"))
         nested = os.path.join(tmp, "src", "deep")
         os.makedirs(nested)
         root = find_workspace_root(nested)

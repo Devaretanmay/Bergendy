@@ -17,11 +17,11 @@ import textwrap
 from unittest.mock import patch
 import pytest
 
-from koyote.cli.main import _topo_sort, cmd_status
-from koyote.config import load_config
-from koyote.engine.execution import ExecutionKind, ExecutionManager
-from koyote.engine.pty_supervisor import PtySupervisor
-from koyote.engine.session import SessionStatus, AgentSession
+from boundary.cli.main import _topo_sort, cmd_status
+from boundary.config import load_config
+from boundary.engine.execution import ExecutionKind, ExecutionManager
+from boundary.engine.pty_supervisor import PtySupervisor
+from boundary.engine.session import SessionStatus, AgentSession
 
 
 def test_config_null_compartments_section():
@@ -122,11 +122,11 @@ def test_snapshot_dir_persists():
     try:
         mgr = ExecutionManager(workdir=tmp)
         ex = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"])
-        ex.snapshot_dir = "/tmp/koyote_test_snap"
+        ex.snapshot_dir = "/tmp/boundary_test_snap"
         mgr.save(ex)
         loaded = mgr.get(ex.execution_id)
         assert loaded is not None
-        assert loaded.snapshot_dir == "/tmp/koyote_test_snap"
+        assert loaded.snapshot_dir == "/tmp/boundary_test_snap"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -145,10 +145,10 @@ def test_status_started_at_none_safe(capsys):
     mock_session.started_at = None
     mock_session.finished_at = 1000.0
 
-    with patch("koyote.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
-         patch("koyote.cli.main.ExecutionManager"), \
-         patch("koyote.cli.main.LaneManager"), \
-         patch("koyote.cli.main.SessionManager") as mock_sess_mgr:
+    with patch("boundary.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
+         patch("boundary.cli.main.ExecutionManager"), \
+         patch("boundary.cli.main.LaneManager"), \
+         patch("boundary.cli.main.SessionManager") as mock_sess_mgr:
         
         mock_sess_mgr.return_value.list_sessions.return_value = [mock_session]
         

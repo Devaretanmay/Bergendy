@@ -14,8 +14,8 @@ build/
 .pytest_cache/
 .venv/
 
-# Koyote transient state
-.koyote/
+# Boundary transient state
+.boundary/
 
 # Language SDK artifacts
 sdk/typescript/node_modules/
@@ -34,7 +34,7 @@ logs/
 .envrc
 
 # Test runs write index state into fixture checkouts; never commit it
-trials/**/.koyote/
+trials/**/.boundary/
 trials/**/.volf/
 trials/**/.sheepdog/
 trials/**/.compart/

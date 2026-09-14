@@ -1,4 +1,4 @@
-# Copyright 2026 Koyote Authors
+# Copyright 2026 Boundary Authors
 # SPDX-License-Identifier: Apache-2.0
 """Contract tests for Hunt's interface separation.
 
@@ -30,9 +30,9 @@ import subprocess
 
 import pytest
 
-from koyote import hunt as hunt_agent
-from koyote import hunt_ports as hp
-from koyote.hunt import (
+from boundary import hunt as hunt_agent
+from boundary import hunt_ports as hp
+from boundary.hunt import (
     SandboxResult,
     _promote_sandbox,
     create_sandbox,
@@ -45,13 +45,13 @@ from koyote.hunt import (
     verify_sandbox_binding,
     write_audit,
 )
-from koyote.patch_writer import PatchResult
+from boundary.patch_writer import PatchResult
 
 
 def _init_git_repo(path: str) -> None:
     subprocess.run(["git", "init", "-b", "main"], cwd=path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Koyote Test"], cwd=path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@koyote.dev"], cwd=path, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Boundary Test"], cwd=path, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@boundary.dev"], cwd=path, check=True, capture_output=True)
     subprocess.run(["git", "add", "-A"], cwd=path, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=path, check=True, capture_output=True)
 
@@ -401,7 +401,7 @@ def test_hunt_ports_imports_no_hunt_internals():
         else:
             continue
         for name in names:
-            assert "koyote.hunt" not in name and name != "koyote", name
+            assert "boundary.hunt" not in name and name != "boundary", name
     # The real check: hunt_ports module object has no reference to hunt internals.
     assert not hasattr(hp, "gather_context")
     assert not hasattr(hp, "run_hunt")
@@ -619,7 +619,7 @@ def test_phantom_reasoning_paths_cannot_invent_files(tmp_path, monkeypatch):
 
 def test_failed_repairs_land_on_avoid_list_not_memory(tmp_path, monkeypatch):
     """record_failure appends failed_patterns; trusted patterns stay empty."""
-    from koyote.knowledge import lookup
+    from boundary.knowledge import lookup
 
     repo = _make_repo(tmp_path)
 
@@ -657,7 +657,7 @@ def test_audit_tampering_grants_no_authority(tmp_path, monkeypatch):
 
 def test_interpretation_caps_solved_by_real_exit_code():
     """A model claiming solved:true over red evidence is not solved."""
-    from koyote.llm import LLMResponse
+    from boundary.llm import LLMResponse
 
     class SolvedLiar:
         def complete(self, messages=None, system_prompt=None):
@@ -667,7 +667,7 @@ def test_interpretation_caps_solved_by_real_exit_code():
                                       '"rationale": "trust me"}',
                                model="liar")
 
-    from koyote.hunt import ai_interpret
+    from boundary.hunt import ai_interpret
 
     reasoning = hunt_agent.HuntReasoning(smallest_change="x")
     red = hunt_agent.VerificationEvidence(command="pytest -q", exit_code=1,
@@ -686,8 +686,8 @@ def test_sandbox_port_roundtrip(tmp_path):
     finally:
         provider.destroy(repo, box)
     assert not os.path.exists(box.sandbox_dir)
-    assert create_sandbox.__module__ == "koyote.hunt"
-    assert destroy_sandbox.__module__ == "koyote.hunt"
+    assert create_sandbox.__module__ == "boundary.hunt"
+    assert destroy_sandbox.__module__ == "boundary.hunt"
 
 
 def test_sandbox_binding_refuses_moved_repo(tmp_path):

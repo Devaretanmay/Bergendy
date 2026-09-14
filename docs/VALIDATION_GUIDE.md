@@ -1,17 +1,17 @@
-# Product Validation Guide: Testing Koyote with Your AI Agents
+# Product Validation Guide: Testing Boundary with Your AI Agents
 
-This guide provides a quick test suite for validating Koyote as the audit and control layer for your AI agents and codebase dependencies.
+This guide provides a quick test suite for validating Boundary as the audit and control layer for your AI agents and codebase dependencies.
 
 ---
 
 ## The Core Validation Model
 
 ```text
-WITHOUT KOYOTE
+WITHOUT BOUNDARY
 Agent -> Tools -> OS / Credentials / Network (Unmonitored)
 
-WITH KOYOTE
-Agent -> KOYOTE (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
+WITH BOUNDARY
+Agent -> BOUNDARY (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
 ```
 
 ---
@@ -21,16 +21,16 @@ Agent -> KOYOTE (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
 Validate that an AI agent reading your repo and executing bash commands is blocked from reading `~/.ssh` or `~/.aws` credentials while executing workspace tasks cleanly.
 
 ```bash
-koyote claude
+boundary claude
 # or arbitrary command execution:
-koyote exec -- cat ~/.ssh/id_rsa
+boundary exec -- cat ~/.ssh/id_rsa
 ```
 
 ### What You Observe:
 - Host SSH credential access is blocked by the OS kernel.
 - Workspace file modifications are tracked with BLAKE3 file diffs.
-- `koyote diff` isolates agent modifications.
-- `koyote undo` restores workspace state in 2ms.
+- `boundary diff` isolates agent modifications.
+- `boundary undo` restores workspace state in 2ms.
 
 ---
 
@@ -39,8 +39,8 @@ koyote exec -- cat ~/.ssh/id_rsa
 Audit your entire codebase for upstream breaking changes, deprecated API callsites, and auto-repairable integrations.
 
 ```bash
-koyote check .
-koyote check . --format=github-issue
+boundary check .
+boundary check . --format=github-issue
 ```
 
 ### What You Observe:
@@ -56,8 +56,8 @@ Detect upstream API drift, then repair from a finding ID with AI-authored,
 sandbox-verified patches against breaking changes.
 
 ```bash
-koyote check .                # note the finding ID, e.g. stripe-3a9c79
-koyote hunt stripe-3a9c79     # full reasoning → repair → sandbox → verify cycle
+boundary check .                # note the finding ID, e.g. stripe-3a9c79
+boundary hunt stripe-3a9c79     # full reasoning → repair → sandbox → verify cycle
 ```
 
 ### What You Observe:
@@ -71,4 +71,4 @@ koyote hunt stripe-3a9c79     # full reasoning → repair → sandbox → verify
 
 After running these validation scenarios on your codebase:
 
-> **"Would you run your coding agents without Koyote?"**
+> **"Would you run your coding agents without Boundary?"**

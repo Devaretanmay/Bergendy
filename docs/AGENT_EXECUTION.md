@@ -1,6 +1,6 @@
-# Koyote Agent Execution & Terminal TUI Supervision
+# Boundary Agent Execution & Terminal TUI Supervision
 
-Koyote enables developers to run interactive terminal coding agents (Claude Code, OpenCode, Codex, Cursor, Aider) inside an OS kernel sandbox with zero configuration.
+Boundary enables developers to run interactive terminal coding agents (Claude Code, OpenCode, Codex, Cursor, Aider) inside an OS kernel sandbox with zero configuration.
 
 ---
 
@@ -9,14 +9,14 @@ Koyote enables developers to run interactive terminal coding agents (Claude Code
 Launch your agent directly inside an isolated sandbox:
 
 ```bash
-koyote claude
-koyote opencode
-koyote codex
-koyote cursor
-koyote aider
+boundary claude
+boundary opencode
+boundary codex
+boundary cursor
+boundary aider
 ```
 
-Koyote automatically:
+Boundary automatically:
 1. Detects the genuine binary on system `PATH`.
 2. Allocates a pseudo-terminal master/slave pair (`PtySupervisor`).
 3. Takes a pre-execution BLAKE3 workspace snapshot.
@@ -34,7 +34,7 @@ Interactive agents rely on advanced terminal features that standard process pipe
 - **Signal Forwarding** (Ctrl+C for cancellation, Ctrl+D for EOF)
 - **Raw Input Mode** (instant keystroke response without enter buffering)
 
-Koyote's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
+Boundary's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
 
 ---
 
@@ -58,14 +58,14 @@ After the agent completes its task:
 
 ```bash
 # 1. Review file changes attributed by execution
-koyote diff
+boundary diff
 
 # 2. Promote changes to workspace baseline
-koyote apply
+boundary apply
 
 # 3. Commit with provenance trailers
-koyote commit -m "feat(auth): add OAuth provider"
+boundary commit -m "feat(auth): add OAuth provider"
 
 # 4. If the agent made a mistake, rollback instantly
-koyote undo
+boundary undo
 ```

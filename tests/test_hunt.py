@@ -1,14 +1,14 @@
-# Copyright 2026 Koyote Authors
+# Copyright 2026 Boundary Authors
 # SPDX-License-Identifier: Apache-2.0
-"""Tests for Koyote Hunt: AI-first repair lifecycle and hard invariants."""
+"""Tests for Boundary Hunt: AI-first repair lifecycle and hard invariants."""
 
 import argparse
 import json
 import os
 import subprocess
 
-from koyote import hunt as hunt_agent
-from koyote.hunt import (
+from boundary import hunt as hunt_agent
+from boundary.hunt import (
     decide_pr,
     finding_id_for,
     gather_context,
@@ -16,21 +16,21 @@ from koyote.hunt import (
     resolve_finding,
     run_hunt,
 )
-from koyote.hunt_ports import evaluate_scope
-from koyote.patch_writer import PatchResult
+from boundary.hunt_ports import evaluate_scope
+from boundary.patch_writer import PatchResult
 
 
 def _init_git_repo(path: str) -> None:
     subprocess.run(["git", "init", "-b", "main"], cwd=path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Koyote Test"], cwd=path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@koyote.dev"], cwd=path, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Boundary Test"], cwd=path, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@boundary.dev"], cwd=path, check=True, capture_output=True)
     subprocess.run(["git", "add", "-A"], cwd=path, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=path, check=True, capture_output=True)
 
 
 def _clean_creds(monkeypatch, tmp_path):
-    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
+    monkeypatch.setenv("BOUNDARY_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "BOUNDARY_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
 
 
@@ -151,7 +151,7 @@ def test_hunt_unknown_finding_fails_closed(tmp_path):
     report = run_hunt(repo, "no-such-finding-xyz")
     assert report.success is False
     assert report.pr_url is None
-    assert "koyote check" in report.reason
+    assert "boundary check" in report.reason
 
 
 def test_hunt_without_credentials_fails_closed(tmp_path, monkeypatch):
@@ -161,7 +161,7 @@ def test_hunt_without_credentials_fails_closed(tmp_path, monkeypatch):
     report = run_hunt(repo, findings[0].finding_id)
     assert report.success is False
     assert report.pr_url is None
-    assert "koyote auth" in report.reason
+    assert "boundary auth" in report.reason
     assert os.path.isfile(report.audit_path)
 
 
@@ -306,7 +306,7 @@ def test_hunt_failing_tests_fail_closed(tmp_path, monkeypatch):
 # ── CLI routing ────────────────────────────────────────────────────────────
 
 def test_cli_routes_finding_id_to_hunt(tmp_path):
-    from koyote.cli.main import _hunt_finding_requested
+    from boundary.cli.main import _hunt_finding_requested
     assert _hunt_finding_requested(argparse.Namespace(
         root_dir="stripe-a1b2c3", finding=None, issue=None)) is True
     assert _hunt_finding_requested(argparse.Namespace(
