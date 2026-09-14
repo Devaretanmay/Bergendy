@@ -1,0 +1,40 @@
+# Rust build artifacts
+/target/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.venv/
+
+# Koyote transient state
+.koyote/
+
+# Language SDK artifacts
+sdk/typescript/node_modules/
+sdk/typescript/*.node
+sdk/typescript/native/target/
+sdk/typescript/native/Cargo.lock
+sdk/typescript/*.tgz
+sdk/typescript/sdk-darwin-*/
+
+# Bench & transient state
+.DS_Store
+.opencode/
+logs/
+.agents/
+.claude/
+.envrc
+
+# Test runs write index state into fixture checkouts; never commit it
+trials/**/.koyote/
+trials/**/.volf/
+trials/**/.sheepdog/
+trials/**/.compart/
