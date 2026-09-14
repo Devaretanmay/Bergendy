@@ -1,0 +1,17 @@
+name: boundary-shield
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  shield:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install boundary
+        run: pip install -e . 2>/dev/null || pip install .
+      - name: Shield gate (fail-closed on unvalidated boundaries)
+        run: boundary shield-check .

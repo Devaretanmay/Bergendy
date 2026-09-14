@@ -10,10 +10,15 @@
 
 ```bash
 pip install boundary
-boundary check /path/to/your-repo   # read-only audit, no AI key needed
+boundary score /path/to/your-repo   # 0-100: SDK drift + unvalidated runtime calls
+boundary scout .                     # read-only audit, touches nothing
+boundary shield --on                 # pre-commit hook: block unguarded AI boundaries
+boundary shield --fix --name stripe  # generate strict Zod+Pydantic from live shapes
+boundary dev -- npm run dev          # capture live traffic into .boundary/contracts.db
 ```
 
-60 seconds to your first risk register. AI repair is opt-in (`boundary auth`).
+60 seconds to your first Boundary Score. AI repair is opt-in (`boundary auth`).
+Legacy `check/consult/work` aliases still work; new modes are `score/scout/shield`.
 
 [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md) | [Join the beta](https://github.com/Devaretanmay/Boundary/issues)
 

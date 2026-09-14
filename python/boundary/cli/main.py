@@ -33,7 +33,7 @@ from boundary.config import (
 from boundary import autopatch
 from boundary.audit import changed_since_index, run_audit
 from boundary.drift import detect_changes, detect_drift
-from boundary.graph import build_dependency_graph
+from boundary.graph import audit_dependency_graph, build_dependency_graph
 from boundary.github.installations import list_ready_repos, store_dir as installations_store_dir
 from boundary.github.webhook_server import WebhookServer
 from boundary.intelligence import resolve_migration
@@ -1986,6 +1986,7 @@ def cmd_check(args):
         write_graph=write_graph,
     )
     print(output)
+    _print_runtime_section(root_path, getattr(args, "format", "cli"))
     # Index warms KB test_recipe so future repair has verification context without extra tokens.
     if write_graph:
         try:
@@ -2014,6 +2015,125 @@ def cmd_check(args):
                     print(f"  boundary hunt {f.finding_id}")
         except Exception:
             pass
+
+
+def _print_runtime_section(root_path: str, fmt: str = "cli") -> None:
+    """Boundary runtime layer appended to check/score/scout (zero-token)."""
+    if fmt != "cli":
+        return
+    try:
+        from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
+        b = scan_runtime_boundaries(root_path)
+        s = boundary_score(b)
+        print()
+        print(f"BOUNDARY RUNTIME: score {s['score']}/100 ({s['grade']}), "
+              f"{b['unvalidated']} unvalidated call(s) in {b['files_scanned']} files")
+        for h in b["findings"][:8]:
+            print(f"  [RUNTIME] {h['file']}:{h['line']} {h['client']} -> {h['url']}"
+                  f"{' [any]' if h['has_any'] else ''}")
+        if b["unvalidated"]:
+            print("  Run: boundary shield --fix --name <api> + import .parse() at callsites")
+    except Exception:
+        pass
+
+
+def cmd_score(args):
+    """Boundary Score: SDK drift (engine) + runtime validation, one number."""
+    import json as _json
+    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    summary = audit_dependency_graph(root_path)
+    try:
+        from boundary.audit import require_structural_evidence
+        summary = require_structural_evidence(summary, root_path)
+    except Exception:
+        pass
+    from boundary.runtime_scan import boundary_score, render_score, scan_runtime_boundaries
+    report = scan_runtime_boundaries(root_path)
+    s = boundary_score(report)
+    if getattr(args, "format", "cli") == "json":
+        print(_json.dumps({"sdk": summary, "runtime": report, "score": s}, indent=2))
+        return
+    print(render_score(s))
+    print()
+    print(f"SDK drift: {len(summary.get('at_risk', []))} at-risk provider(s), "
+          f"{summary.get('total_callsites_mapped', 0)} callsites mapped")
+    for h in report["findings"][:8]:
+        print(f"  [RUNTIME] {h['file']}:{h['line']} {h['client']} -> {h['url']}")
+    if report["unvalidated"]:
+        print("Run: boundary shield --fix --name <api>")
+
+
+def cmd_scout(args):
+    """Scout (read-only audit): Howl-mode mapping + runtime warnings, touches nothing."""
+    import json as _json
+    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    from boundary.runtime_scan import scan_runtime_boundaries
+    report = scan_runtime_boundaries(root_path)
+    if getattr(args, "format", "cli") == "json":
+        print(_json.dumps(report, indent=2))
+        return
+    print("SCOUT (read-only — zero files touched)")
+    if not report["findings"]:
+        print("  all boundaries guarded — clean")
+    for h in report["findings"][:15]:
+        print(f"  WARN {h['file']}:{h['line']} unprotected boundary "
+              f"({h['client']} {h['url']}) — AI wrote an unguarded call here")
+    print()
+    _print_runtime_section(root_path, "cli")
+
+
+def cmd_shield(args):
+    """Shield (enforce & fix): hooks, schema generation, drift status."""
+    import json as _json
+    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    from boundary import shield as _shield
+    if getattr(args, "off", False):
+        print(_shield.remove_hook(root_path))
+        return
+    if getattr(args, "on", False):
+        print(_shield.install_hook(root_path))
+        return
+    if getattr(args, "fix", False):
+        name = getattr(args, "name", "stripe") or "stripe"
+        sample = _shield.load_sample(getattr(args, "sample_file", None))
+        out = _shield.generate(root_path, name, sample)
+        print(f"wrote {out['ts']} + {out['py']} (shape {out['shape']}, "
+              f"{out['variants']} other variant(s) in registry)")
+        if getattr(args, "refine", False):
+            export = "".join(w.capitalize() for w in name.split("_")) + "Schema"
+            print(_shield.refine_with_ai(root_path, name, export))
+        print("Next: import the schema and .parse() at each callsite, then re-run score.")
+        return
+    if getattr(args, "status", False):
+        from boundary.contracts import status as _cstatus
+        from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
+        report = scan_runtime_boundaries(root_path)
+        s = boundary_score(report)
+        d = _cstatus(root_path)
+        print(f"Shield status: score {s['score']}/100 ({s['grade']}), "
+              f"{report['unvalidated']} unvalidated, "
+              f"{d['tracked']} tracked endpoint(s), {len(d['drifts'])} drift(s)")
+        for dr in d["drifts"]:
+            print(f"  DRIFT {dr['endpoint']}: live={dr['live_hash'][:8]} "
+                  f"approved={dr['approved_hash'][:8]} {dr['detail']}")
+        if report["unvalidated"] or d["drifts"]:
+            sys.exit(1)
+        return
+    print("usage: boundary shield [--on|--off|--fix --name <api>|--status]")
+
+
+def cmd_shield_check(args):
+    """Fail-closed gate for the pre-commit hook and CI (exit 1 = blocked)."""
+    from boundary import shield as _shield
+    ok, msg = _shield.check_files(getattr(args, "path", ".") or ".", getattr(args, "files", None))
+    print(msg)
+    if not ok:
+        sys.exit(1)
+
+
+def cmd_dev(args):
+    from boundary.capture import cmd_dev as _dev
+    sys.exit(_dev(args))
 
 
 def cmd_fix(args):
@@ -2807,6 +2927,34 @@ def main():
     shim_parser = subparsers.add_parser("_exec_shim", help=argparse.SUPPRESS)
     shim_parser.add_argument("shim_args", nargs=argparse.REMAINDER)
 
+    # Boundary modes: score (was check) / scout (was consult) / shield (was hunt).
+    # Old names keep working as aliases; SDK-drift engine underneath is untouched.
+    score_p = subparsers.add_parser("score", help="Boundary Score 0-100: SDK drift + unvalidated runtime calls")
+    score_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    score_p.add_argument("--format", default="cli", choices=["cli", "json"], help="Output format (default: cli)")
+
+    scout_p = subparsers.add_parser("scout", help="Scout (read-only audit): map boundaries, warn, touch nothing")
+    scout_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    scout_p.add_argument("--format", default="cli", choices=["cli", "json"], help="Output format (default: cli)")
+
+    shield_p = subparsers.add_parser("shield", help="Shield (enforce & fix): hooks, schema generation, drift status")
+    shield_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    shield_p.add_argument("--on", action="store_true", help="Install pre-commit shield hook")
+    shield_p.add_argument("--off", action="store_true", help="Remove pre-commit shield hook")
+    shield_p.add_argument("--fix", action="store_true", help="Generate .boundary/<name> schemas from sample")
+    shield_p.add_argument("--name", default="stripe", help="Endpoint name for --fix (default: stripe)")
+    shield_p.add_argument("--sample-file", default=None, help="JSON sample file for --fix")
+    shield_p.add_argument("--refine", action="store_true", help="BYOK-AI refine of --fix output (fail-open)")
+    shield_p.add_argument("--status", action="store_true", help="Score + contract drift overview (CI gate)")
+
+    shield_check_p = subparsers.add_parser("shield-check", help=argparse.SUPPRESS)
+    shield_check_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    shield_check_p.add_argument("--files", nargs="*", default=None, help="Files to gate (default: git staged)")
+
+    dev_p = subparsers.add_parser("dev", help="Run app with live traffic capture into .boundary/contracts.db")
+    dev_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    dev_p.add_argument("cmd", nargs=argparse.REMAINDER, help="Command after -- (e.g. -- npm run dev)")
+
     args = parser.parse_args()
 
     if getattr(args, "run_flag", None):
@@ -2845,6 +2993,11 @@ def main():
         "audit": cmd_check,
         "index": cmd_check,
         "fix": cmd_fix,
+        "shield": cmd_shield,
+        "shield-check": cmd_shield_check,
+        "dev": cmd_dev,
+        "score": cmd_score,
+        "scout": cmd_scout,
         "maintain": cmd_fix,
         "update": cmd_fix,
         "work": cmd_fix,

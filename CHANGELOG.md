@@ -1,8 +1,24 @@
 # Changelog
 
-All notable changes to Koyote are documented here.
+All notable changes to Boundary are documented here.
 
-## [1.1.3] - 2026-09-11
+## [Unreleased] — Boundary pivot (cloned from Koyote 1.1.3)
+
+### Added
+- **Runtime modes**: `score` (0-100 SDK+runtime grade), `scout` (read-only boundary audit),
+  `shield --on/--off/--fix/--status` (pre-commit hook, deterministic Zod+Pydantic generation,
+  fail-closed `shield-check` CI gate), `dev -- <cmd>` (live traffic capture).
+- **Contract Registry** (`boundary/contracts.py`): local SQLite `.boundary/contracts.db` storing
+  unique payload shapes (BLAKE2b structural hash), approvals, and drift events.
+- **Traffic interceptor**: `boundary dev` socket listener + `sdk/boundary/capture.js` fetch shim.
+- **Shield AI prompts** (Pocock-style schema generation/injection/block) + `--refine` BYOK pass.
+- **Koyote keychain migration**: `~/.koyote/credentials.json` honored once and copied forward.
+
+### Changed
+- Global rename `koyote` -> `boundary` (package, CLI, Cargo crate, state dir `.boundary`).
+- `check` output appends a BOUNDARY RUNTIME section; old command names kept as aliases.
+
+## [1.1.3] - 2026-09-11 (Koyote upstream)
 
 ### Added
 - **Hunt autonomous repair agent (`koyote/hunt.py`, `koyote hunt <id>`)**: finding-driven lifecycle — live context reconstruction, structured 14-question AI reasoning with per-file intent, AI-authored patches, isolated exact-SHA sandbox worktrees, real verification, skeptical AI interpretation, bounded AI-directed iteration, fail-closed refusals, verified-only PRs, and a full JSON audit trail per finding.
