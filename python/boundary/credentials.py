@@ -12,6 +12,10 @@ from typing import Any, Dict
 
 CREDENTIALS_DIR = os.path.expanduser("~/.boundary")
 CREDENTIALS_FILE = os.path.join(CREDENTIALS_DIR, "credentials.json")
+# Pivot migration: Boundary was cloned from Koyote. A pre-existing Koyote
+# keychain is honored once and migrated forward, so `boundary auth` keeps
+# working without re-entering keys.
+LEGACY_CREDENTIALS_FILE = os.path.expanduser("~/.koyote/credentials.json")
 
 
 def get_credentials_path() -> str:
@@ -29,7 +33,11 @@ def scoped_credentials_path(installation_id: str | None = None, repo: str | None
 
 
 def load_credentials(installation_id: str | None = None, repo: str | None = None) -> Dict[str, Any] | None:
-    """Load stored credentials: scoped file first, then global file."""
+    """Load stored credentials: scoped file first, then global file.
+
+    Falls back to the legacy Koyote keychain once and migrates it forward
+    (copy, never move) so the pivot keeps working BYOK keys.
+    """
     candidates = []
     if installation_id:
         candidates.append(scoped_credentials_path(installation_id, repo))
@@ -44,6 +52,28 @@ def load_credentials(installation_id: str | None = None, repo: str | None = None
                 return data
         except Exception:
             continue
+    # Legacy migration (Koyote -> Boundary pivot). Only on default paths:
+    # an explicit BOUNDARY_CREDENTIALS_FILE override means strict isolation
+    # (tests, sandboxes) and must never fall back to the legacy keychain.
+    if "BOUNDARY_CREDENTIALS_FILE" in os.environ:
+        return None
+    try:
+        if os.path.exists(LEGACY_CREDENTIALS_FILE):
+            with open(LEGACY_CREDENTIALS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict) and data.get("api_key"):
+                try:
+                    os.makedirs(CREDENTIALS_DIR, exist_ok=True)
+                    target = get_credentials_path()
+                    if not os.path.exists(target):
+                        with open(target, "w", encoding="utf-8") as out:
+                            json.dump(data, out, indent=2)
+                        os.chmod(target, 0o600)
+                except Exception:
+                    pass
+                return data
+    except Exception:
+        pass
     return None
 
 
