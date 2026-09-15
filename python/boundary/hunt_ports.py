@@ -46,6 +46,8 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 
+import os as _os
+
 _SEAL: Any = object()
 """Private admission sentinel. Never exported, never in __all__.
 
@@ -284,7 +286,6 @@ def seal_verified_repair(
     Any failure returns None. Callers fail closed; no token exists to
     publish.
     """
-    import os as _os
 
     if not patches:
         return None

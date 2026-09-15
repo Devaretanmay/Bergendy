@@ -90,19 +90,18 @@ git log --grep "Agent-Sandbox: none"
 
 ## Compatibility
 
-Boundary v1.x emits legacy `Boundary-*` trailers (`Boundary-Execution`,
+Boundary emits structured `Boundary-*` trailers (`Boundary-Execution`,
 `Boundary-Agent`, `Boundary-Compartment`, `Boundary-Security`). These map 1:1 onto
-the `Agent-*` fields above (earlier Volf/Sheepdog/Compart v1.x releases emitted
-the same fields under their own names; readers should accept all variants):
+the standard `Agent-*` specification fields:
 
-| Legacy | Spec |
+| Boundary Trailer | Standard Spec Trailer |
 | :--- | :--- |
 | `Boundary-Agent` | `Agent-Agent` |
 | `Boundary-Execution` | `Agent-Execution` |
-| `Compartment` → `Boundary-Compartment` | `Agent-Compartment` |
+| `Boundary-Compartment` | `Agent-Compartment` |
 | `Boundary-Security` | `Agent-Sandbox` |
 
-Writers SHOULD emit spec names going forward. Readers SHOULD accept both.
+Writers SHOULD emit standard spec names or Boundary names going forward. Readers SHOULD accept both.
 
 ## What this spec deliberately does not do
 

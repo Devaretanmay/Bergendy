@@ -23,6 +23,8 @@ from typing import Any
 from boundary.contracts import check_drift, record_shape
 
 
+from boundary.contracts import status as _status
+
 def handle_frame(repo_root: str, frame: dict[str, Any]) -> None:
     endpoint = str(frame.get("endpoint") or "unknown").strip() or "unknown"
     sample = frame.get("sample", {})
@@ -99,7 +101,6 @@ def cmd_dev(args) -> int:
     finally:
         stop.set()
         t.join(timeout=5)
-    from boundary.contracts import status as _status
     s = _status(repo_root)
     print(f"capture done: {s['tracked']} tracked endpoint(s), {len(s['drifts'])} drift event(s)")
     return rc

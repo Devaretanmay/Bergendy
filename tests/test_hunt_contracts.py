@@ -45,6 +45,11 @@ from boundary.hunt import (
     verify_sandbox_binding,
     write_audit,
 )
+from types import SimpleNamespace
+import ast
+from boundary.knowledge import lookup
+from boundary.llm import LLMResponse
+from boundary.hunt import ai_interpret
 from boundary.patch_writer import PatchResult
 
 
@@ -156,7 +161,6 @@ def test_subclass_cannot_bypass_the_seal():
 
 
 def test_duck_typed_lookalike_is_not_sealed():
-    from types import SimpleNamespace
 
     mimic = SimpleNamespace(file_path="a.py", unified_diff="d", author="ai",
                             model="m", admission="seal_ai_patch",
@@ -243,16 +247,12 @@ def test_promote_accepts_sealed_patch(tmp_path):
 # ── seal_verified_repair: derived evidence only, no caller booleans ───────
 
 def _evidence(*, command="pytest -q", exit_code=0, changed=("app.py",), duration=42):
-    from types import SimpleNamespace
-
     return SimpleNamespace(command=command, exit_code=exit_code,
                            duration_ms=duration, output="ok",
                            changed_files=list(changed), diff="d")
 
 
 def _interpretation(*, solved=True, unrelated=False, needs_more=False):
-    from types import SimpleNamespace
-
     return SimpleNamespace(solved=solved, unrelated_behavior=unrelated,
                            needs_more_investigation=needs_more, rationale="r")
 
@@ -287,8 +287,6 @@ def test_seal_mints_token_on_full_evidence(tmp_path):
 
 
 def test_seal_refuses_each_missing_condition(tmp_path):
-    from types import SimpleNamespace
-
     sandbox = str(tmp_path / "sand")
     os.makedirs(sandbox)
     good = [_sealed_in(sandbox)]
@@ -367,7 +365,6 @@ def test_run_hunt_source_never_touches_concrete_repair_modules():
 
 
 def test_run_hunt_contains_no_file_writes_or_imports():
-    import ast
 
     tree = ast.parse(inspect.getsource(run_hunt))
     for node in ast.walk(tree):
@@ -389,8 +386,6 @@ def test_default_adapters_satisfy_protocols():
 
 
 def test_hunt_ports_imports_no_hunt_internals():
-    import ast
-
     src = inspect.getsource(hp)
     tree = ast.parse(src)
     for node in ast.walk(tree):
@@ -619,7 +614,6 @@ def test_phantom_reasoning_paths_cannot_invent_files(tmp_path, monkeypatch):
 
 def test_failed_repairs_land_on_avoid_list_not_memory(tmp_path, monkeypatch):
     """record_failure appends failed_patterns; trusted patterns stay empty."""
-    from boundary.knowledge import lookup
 
     repo = _make_repo(tmp_path)
 
@@ -657,7 +651,6 @@ def test_audit_tampering_grants_no_authority(tmp_path, monkeypatch):
 
 def test_interpretation_caps_solved_by_real_exit_code():
     """A model claiming solved:true over red evidence is not solved."""
-    from boundary.llm import LLMResponse
 
     class SolvedLiar:
         def complete(self, messages=None, system_prompt=None):
@@ -667,7 +660,6 @@ def test_interpretation_caps_solved_by_real_exit_code():
                                       '"rationale": "trust me"}',
                                model="liar")
 
-    from boundary.hunt import ai_interpret
 
     reasoning = hunt_agent.HuntReasoning(smallest_change="x")
     red = hunt_agent.VerificationEvidence(command="pytest -q", exit_code=1,

@@ -98,9 +98,7 @@ class Execution:
     def git_trailers(self) -> str:
         """Format Git trailers per the Agent Provenance Trailers spec (SPEC.md).
 
-        Emits Agent-* field names. Pre-rename releases wrote legacy
-        Boundary-*, Volf-*, Sheepdog-*, or Compart-* names; readers should accept
-        all variants (see SPEC.md, "Compatibility").
+        Emits Agent-* field names and Boundary-* metadata.
         """
         sandbox_status = "clean"
         blocked_count = sum(

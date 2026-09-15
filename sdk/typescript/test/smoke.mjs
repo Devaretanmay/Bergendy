@@ -34,7 +34,6 @@ console.log('runtimeCanRoute: ok')
 
 // Opaque handle - parses configs once, routes many times.
 // Uses its own configs (with a registered `c`) so denial + runOrder
-// assertions exercise real whitelist/order semantics.
 const handleConfigs = JSON.stringify({
   configs: [
     { name: 'a', allow_outbound_to: ['b'] },

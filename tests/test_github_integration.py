@@ -8,6 +8,10 @@ from boundary.github.webhook_server import WebhookServer, handle_webhook_payload
 from boundary.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 
 
+from boundary import work_graph
+from boundary.github.dashboard import collect_dashboard, render_dashboard
+from boundary.github.push_events import parse_push_payload
+
 def test_webhook_signature_verification():
     secret = "test_boundary_secret_key_123"
     payload = b'{"action": "push", "repository": {"full_name": "owner/repo"}}'
@@ -102,9 +106,6 @@ def test_http_server_delivers_to_handler_unbound(tmp_path):
 
 
 def test_dashboard_renders_state(tmp_path, monkeypatch):
-    from boundary import work_graph
-    from boundary.github.dashboard import collect_dashboard, render_dashboard
-    from boundary.github.push_events import parse_push_payload
     monkeypatch.setenv("BOUNDARY_WORK_GRAPH_FILE", str(tmp_path / "wg.json"))
     work_graph.record_push(parse_push_payload({
         "ref": "refs/heads/feature/payments", "before": "0" * 40, "after": "abc123",
@@ -118,9 +119,6 @@ def test_dashboard_renders_state(tmp_path, monkeypatch):
 
 
 def test_dashboard_ux_elements(tmp_path, monkeypatch):
-    from boundary import work_graph
-    from boundary.github.dashboard import render_dashboard
-    from boundary.github.push_events import parse_push_payload
     monkeypatch.setenv("BOUNDARY_WORK_GRAPH_FILE", str(tmp_path / "wg2.json"))
     work_graph.record_push(parse_push_payload({
         "ref": "refs/heads/feature/payments", "before": "0" * 40, "after": "abc123",
@@ -131,5 +129,5 @@ def test_dashboard_ux_elements(tmp_path, monkeypatch):
     assert "candidates tracked" in page and "need attention" in page
     assert "border-radius:999px" in page and "OBSERVED" in page  # text badge, not color alone
     assert "ago" in page or "just now" in page  # freshness signal
-    assert "https://github.com/acme/api-service" in page  # drill link
+    assert "https://github.com/acme/api-service" in page
     assert "viewport" in page

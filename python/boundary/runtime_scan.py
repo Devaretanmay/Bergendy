@@ -16,6 +16,7 @@ from typing import Any
 
 TS_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 PY_EXTS = (".py",)
+GO_EXTS = (".go",)
 
 TS_CALL = re.compile(
     r"(?<!\w)(fetch\s*\(|axios\s*\.\s*(get|post|put|patch|delete)\s*\(|"
@@ -25,19 +26,24 @@ PY_CALL = re.compile(
     r"(?<!\w)(requests\s*\.\s*(get|post|put|patch|delete)\s*\(|"
     r"httpx\s*\.\s*(get|post|request)\s*\(|urlopen\s*\()"
 )
+GO_CALL = re.compile(
+    r"(?<!\w)(http\s*\.\s*(Get|Post|Head|PostForm)\s*\(|"
+    r"\w+\s*\.\s*(Get|Post|Do)\s*\(|"
+    r"http\s*\.\s*NewRequest\s*\()"
+)
 URL_LIT = re.compile(r"""['"`](https?://[^'"`\s]+|/api/[^'"`\s]*)['"`]""")
-PARSE_GUARD = re.compile(r"\.parse\s*\(|Schema\.parse|model_validate|pydantic|z\.object|zod")
-ANY_CAST = re.compile(r"\bas\s+any\b|:\s*any\b|\bany\[\]")
+PARSE_GUARD = re.compile(r"\.parse\s*\(|Schema\.parse|model_validate|pydantic|z\.object|zod|json\.Unmarshal")
+ANY_CAST = re.compile(r"\bas\s+any\b|:\s*any\b|\bany\[\]|interface\{\}|any")
 
 SKIP_DIRS = {".git", "node_modules", ".next", "__pycache__", ".venv", "target",
-             ".boundary", ".koyote", "dist", "build"}
+             ".boundary", "dist", "build"}
 
 
 def _iter_files(root: str):
     for dirpath, dirnames, filenames in os.walk(root, topdown=True):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for fn in filenames:
-            if fn.endswith(TS_EXTS) or fn.endswith(PY_EXTS):
+            if fn.endswith(TS_EXTS) or fn.endswith(PY_EXTS) or fn.endswith(GO_EXTS):
                 yield os.path.join(dirpath, fn)
 
 
@@ -52,10 +58,20 @@ def scan_runtime_boundaries(repo_root: str = ".") -> dict[str, Any]:
         except OSError:
             continue
         files_scanned += 1
-        lang = "python" if fp.endswith(PY_EXTS) else "typescript"
+        if fp.endswith(PY_EXTS):
+            lang = "python"
+        elif fp.endswith(GO_EXTS):
+            lang = "go"
+        else:
+            lang = "typescript"
         rel = os.path.relpath(fp, repo_root)
         for i, line in enumerate(lines):
-            call = TS_CALL.search(line) if lang == "typescript" else PY_CALL.search(line)
+            if lang == "typescript":
+                call = TS_CALL.search(line)
+            elif lang == "python":
+                call = PY_CALL.search(line)
+            else:
+                call = GO_CALL.search(line)
             if not call:
                 continue
             window = "".join(lines[max(0, i - 1):min(len(lines), i + 4)])

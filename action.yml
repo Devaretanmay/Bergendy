@@ -1,0 +1,43 @@
+name: 'Boundary Enforcement'
+description: 'Scan for unprotected network boundaries and enforce runtime schemas in CI/CD.'
+author: 'Boundary Team'
+inputs:
+  command:
+    description: 'The boundary command to run (scan, guard, verify)'
+    required: false
+    default: 'scan'
+  fail-on-unprotected:
+    description: 'Fail the CI job if unprotected network boundaries are detected'
+    required: false
+    default: 'true'
+  min-score:
+    description: 'Minimum acceptable integrity score (0-100)'
+    required: false
+    default: '80'
+  path:
+    description: 'Repository root path to analyze'
+    required: false
+    default: '.'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download Boundary Binary
+      shell: bash
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/Devaretanmay/Boundary/main/install.sh | sh
+        echo "$HOME/.boundary/bin" >> $GITHUB_PATH
+
+    - name: Run Boundary
+      shell: bash
+      run: |
+        CMD="${{ inputs.command }}"
+        if [ "$CMD" = "scan" ]; then
+          boundary scan "${{ inputs.path }}" --min-score="${{ inputs.min-score }}" $( [ "${{ inputs.fail-on-unprotected }}" = "true" ] && echo "--fail-on-unprotected" )
+        elif [ "$CMD" = "guard" ]; then
+          boundary guard "${{ inputs.path }}" --ci --strict
+        elif [ "$CMD" = "verify" ]; then
+          boundary verify "${{ inputs.path }}" --contract-only
+        else
+          boundary "$CMD" "${{ inputs.path }}"
+        fi

@@ -9,6 +9,8 @@ from typing import Any, Callable, Dict
 
 from .client import verify_webhook_signature
 
+from boundary.github.dashboard import render_dashboard
+
 _logger = logging.getLogger("boundary.github.webhook_server")
 
 
@@ -67,7 +69,6 @@ class WebhookHTTPHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"status": "healthy", "service": "boundary-github-app"}).encode("utf-8"))
         elif self.path.split("?")[0].rstrip("/") == "/dashboard":
-            from boundary.github.dashboard import render_dashboard
             body = render_dashboard().encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")

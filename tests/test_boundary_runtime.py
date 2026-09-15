@@ -19,6 +19,7 @@ from boundary.contracts import (
     status,
     top_shapes,
 )
+import tempfile
 from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
 
 
@@ -78,7 +79,6 @@ def test_contract_drift_detects_new_field(tmp_path):
 
 def test_capture_frame_roundtrip(tmp_path):
     # End-to-end socket path: frame in -> shape recorded in contracts.db.
-    import tempfile
     sock_path = os.path.join(tempfile.gettempdir(), f"boundary-test-{os.getpid()}.sock")
     if os.path.exists(sock_path):
         os.unlink(sock_path)

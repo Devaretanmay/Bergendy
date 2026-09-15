@@ -22,6 +22,9 @@ from boundary.hunt import (
     run_hunt,
     verify_promotion,
 )
+from boundary.patch_writer import PatchResult
+import pytest as _pytest
+from boundary.hunt import gather_context
 
 
 def _init_git_repo(path: str) -> None:
@@ -46,7 +49,6 @@ def _make_repo(tmp_path) -> str:
 
 
 def _raw_patch(abs_path: str):
-    from boundary.patch_writer import PatchResult
 
     return PatchResult(file_path=abs_path, success=True, lines_changed=1,
                        unified_diff="--- a\n+++ b\n+x\n", rules_applied=["r"])
@@ -142,7 +144,6 @@ def test_finding_affected_files_are_repo_relative(tmp_path):
 # ── L1: symlinks never cross the promotion boundary ───────────────────────
 
 def test_promote_refuses_symlinked_source(tmp_path):
-    import pytest as _pytest
 
     repo = _make_repo(tmp_path)
     box = hunt_agent.create_sandbox(repo, "")
@@ -165,8 +166,6 @@ def test_promote_refuses_symlinked_source(tmp_path):
 
 
 def test_promote_refuses_symlinked_destination(tmp_path):
-    import pytest as _pytest
-
     repo = _make_repo(tmp_path)
     box = hunt_agent.create_sandbox(repo, "")
     try:
@@ -231,7 +230,6 @@ def test_finding_summary_admits_registry_basis(tmp_path):
 
 
 def test_context_labels_drift_evidence(tmp_path):
-    from boundary.hunt import gather_context
 
     repo = _make_repo(tmp_path)
     ctx = gather_context(repo, list_findings(repo)[0])

@@ -34,7 +34,7 @@ Interactive agents rely on advanced terminal features that standard process pipe
 - **Signal Forwarding** (Ctrl+C for cancellation, Ctrl+D for EOF)
 - **Raw Input Mode** (instant keystroke response without enter buffering)
 
-Boundary's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
+Boundary's `PtySupervisor` bridges these capabilities directly so the agent runs identically to a bare-metal session.
 
 ---
 

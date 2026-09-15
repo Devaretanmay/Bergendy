@@ -7,6 +7,9 @@ import subprocess
 import json
 
 
+from boundary import audit as audit_mod
+from boundary.audit import is_code_evidence
+
 def _run_boundary_cli(args):
     env = dict(os.environ)
     env["PYTHONPATH"] = "python"
@@ -76,8 +79,6 @@ def test_cli_at_hunt_alias():
 
 
 def test_audit_drops_string_only_drift(tmp_path):
-    import os
-    from boundary import audit as audit_mod
     repo = str(tmp_path / "r")
     os.makedirs(os.path.join(repo, "src"))
     with open(os.path.join(repo, "src", "proxy.rs"), "w") as f:
@@ -87,7 +88,6 @@ def test_audit_drops_string_only_drift(tmp_path):
 
 
 def test_is_code_evidence_classifier():
-    from boundary.audit import is_code_evidence
     assert is_code_evidence({"kind": "Import", "matched_pattern": "x",
                              "line_content": "import x"}) is True
     assert is_code_evidence({"kind": None, "matched_pattern": "stripe",

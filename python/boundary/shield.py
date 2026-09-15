@@ -16,6 +16,9 @@ from typing import Any
 
 from boundary.contracts import approve, record_shape, top_shapes
 
+from boundary.runtime_scan import scan_runtime_boundaries
+from boundary.llm import LLMClient, resolve_llm_config
+
 HOOK_BODY = """#!/bin/sh
 # Boundary Shield (managed by `boundary shield --on`). Fail-closed.
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx|js|jsx|py)$' || true)
@@ -158,7 +161,6 @@ def _staged_files(repo_root: str) -> list[str]:
 
 def check_files(repo_root: str = ".", files: list[str] | None = None) -> tuple[bool, str]:
     """Fail-closed gate for hooks and CI. Returns (ok, message)."""
-    from boundary.runtime_scan import scan_runtime_boundaries
     if files is None:
         files = _staged_files(repo_root)
     relevant = [f for f in files if f.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py"))]
@@ -189,7 +191,6 @@ def refine_with_ai(repo_root: str, name: str, export: str) -> str | None:
     prompt and overwrite the deterministic schema on success. Fail-open to
     the deterministic file on any error (never blocks --fix)."""
     try:
-        from boundary.llm import LLMClient, resolve_llm_config
         cfg = resolve_llm_config()
         if cfg is None:
             return "no BYOK credentials — kept deterministic schema (run `boundary auth`)"

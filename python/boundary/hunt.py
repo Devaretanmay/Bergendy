@@ -63,6 +63,14 @@ from boundary.hunt_ports import (
     seal_ai_patch,
     seal_verified_repair,
 )
+from boundary.github.client import GitHubAppClient
+import urllib.request
+from boundary import cross_repo as _xr
+from boundary.config import load_config
+from blake3 import blake3 as _blake3
+from urllib.parse import urlparse
+import json as _json
+from boundary import _core
 from boundary.knowledge import lookup as kb_lookup
 from boundary.knowledge import record_failure
 from boundary.redact import redact_record
@@ -244,8 +252,6 @@ def _finding_from_github_issue(repo_dir: str, issue_number: str) -> HuntFinding 
         return None
     body = ""
     try:
-        from boundary.github.client import GitHubAppClient  # lazy: keeps import graph light
-        import urllib.request
 
         client = GitHubAppClient()
         repo = _github_repo_from_remote(repo_dir)
@@ -372,7 +378,6 @@ def gather_context(repo_dir: str, finding: HuntFinding) -> HuntContext:
 
     cross_repo: list[dict[str, Any]] = []
     try:
-        from boundary import cross_repo as _xr  # lazy: optional surface
         for repo in (_xr.installed_repos() or [])[:10]:
             checkout = _xr.consumer_checkout(repo)
             if checkout:
@@ -449,7 +454,6 @@ def gather_context(repo_dir: str, finding: HuntFinding) -> HuntContext:
 
     policy: dict[str, Any] = {}
     try:
-        from boundary.config import load_config  # lazy
 
         cfg_path = os.path.join(repo_dir, ".boundary", "config.yaml")
         cfg = load_config(cfg_path if os.path.isfile(cfg_path) else None)
@@ -1024,7 +1028,6 @@ class _DefaultInterpreter:
 def render_repair_pr_body(repair: VerifiedRepair, ctx: HuntContext, repo_dir: str) -> str:
     """Developer Trust PR body for a sealed repair (presentation, not proof)."""
     try:
-        from blake3 import blake3 as _blake3
         patch_hash = _blake3(repair.unified_diff.encode("utf-8")).hexdigest()
     except Exception:
         patch_hash = hashlib.sha256(repair.unified_diff.encode("utf-8")).hexdigest()
@@ -1824,3 +1827,351 @@ __all__ = [
     "AIPlannerAuthor",
     "LocalGitHubPublisher",
 ]
+
+def _human_schema_names(endpoint: str) -> tuple[str, str]:
+    """Deterministic short human-like file/export names (no URL slug).
+
+    Takes the last 2-3 meaningful path segments, drops scheme/host noise,
+    versions, placeholders and numeric ids, and caps length so committed
+    files look hand-written, e.g. ``resend_email_response`` /
+    ``ResendEmailResponseSchema`` instead of a 150-char URL slug.
+    """
+    raw = (endpoint or "").strip().strip("'\"")
+    path = raw
+    try:
+        parsed = urlparse(raw if "://" in raw else f"scheme://host/{raw.lstrip('/')}")
+        if parsed.path and parsed.path not in ("", "/"):
+            path = parsed.path
+    except Exception:
+        pass
+    tokens: list[str] = []
+    _cur = ""
+    for _ch in path:
+        if _ch.isalnum():
+            _cur += _ch
+        elif _cur:
+            tokens.append(_cur)
+            _cur = ""
+    if _cur:
+        tokens.append(_cur)
+    noise = {
+        "http", "https", "api", "client", "www", "com", "net", "io",
+        "app", "v1", "v2", "v3", "v4", "v5",
+    }
+    kept: list[str] = []
+    for tok in tokens:
+        t = tok.strip().lower()
+        if not t or t in noise:
+            continue
+        if len(t) > 1 and t[0] == "v" and t[1:].isdigit():
+            continue
+        if t.isdigit():
+            continue
+        if t in {"id", "ids", "uuid", "accountid", "account_id"}:
+            continue
+        if t.startswith("{") or t.startswith(":") or t.startswith("<"):
+            continue
+        kept.append(t)
+    short = kept[-3:] if len(kept) >= 3 else kept
+    if not short:
+        short = ["api_response"]
+    base_name = "_".join(short)[:40].strip("_") or "api_response"
+    if base_name[0].isdigit():
+        base_name = f"api_{base_name}"[:40]
+    schema_name = "".join(part.capitalize() for part in base_name.split("_"))
+    if not schema_name.endswith("Schema"):
+        schema_name += "Schema"
+    return base_name, schema_name[:60]
+
+
+def _ai_human_schema_name(client, endpoint: str, samples: list[dict]) -> tuple[str, str] | None:
+    """Naming Step: ask the model for a short human-like name, else None."""
+    try:
+        keys: list[str] = []
+        for s in (samples or [])[:3]:
+            body = s.get("response_body") if isinstance(s, dict) else s
+            if isinstance(body, dict):
+                keys.extend(list(body.keys())[:8])
+        prompt = (
+            "Naming Step (before writing the schema).\n"
+            f"Endpoint: {endpoint}\n"
+            f"Response keys seen: {', '.join(keys[:12]) or 'unknown'}\n"
+            "Derive a SHORT human-like name from endpoint intent + response shape, NOT a URL slug.\n"
+            "Rules: file = snake_case, 2-4 words, max 40 chars "
+            "(e.g. resend_email_response). Export = PascalCase ending in Schema "
+            "(e.g. ResendEmailResponseSchema). NEVER emit URL slugs like "
+            "https___api_... Reply JSON ONLY: "
+            '{"file": "...", "export": "..."}'
+        )
+        resp = client.complete(
+            messages=[{"role": "user", "content": prompt}],
+            system_prompt=(
+                "You name runtime schemas like a senior engineer. "
+                "Short, intent-revealing names only. Reply JSON only."
+            ),
+        )
+        txt = (resp.content or "").strip()
+        start, end = txt.find("{"), txt.rfind("}")
+        if start == -1 or end <= start:
+            return None
+        data = _json.loads(txt[start:end + 1])
+        _raw_file = str(data.get("file", "")).lower().strip()
+        _cleaned = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in _raw_file)
+        while "__" in _cleaned:
+            _cleaned = _cleaned.replace("__", "_")
+        file_n = _cleaned.strip("_")
+        exp_n = str(data.get("export", "")).strip()
+        if not file_n or not exp_n or len(file_n) > 40 or len(exp_n) > 60:
+            return None
+        if not (file_n[0].isalpha() and file_n[0].isascii() and file_n[0].islower()):
+            return None
+        if not all(ch.isalnum() and ch.isascii() and (ch.islower() or ch.isdigit()) or ch == "_" for ch in file_n):
+            return None
+        if not (exp_n[0].isalpha() and exp_n[0].isascii() and exp_n[0].isupper()):
+            return None
+        if not all(ch.isalnum() and ch.isascii() for ch in exp_n):
+            return None
+        if not exp_n.endswith("Schema"):
+            exp_n = (exp_n + "Schema")[:60]
+        if "http" in file_n or "https" in file_n or "api_" in file_n and len(file_n) > 30:
+            return None
+        return file_n, exp_n
+    except Exception:
+        return None
+
+
+def generate_schema_for_traffic(client, endpoint: str, clustered_samples: list[dict], lang: str, schema_name: str) -> str:
+    # Isolate only the actual response body payloads.
+    # Never pass the telemetry wrapper (request_method, response_status, request_headers)
+    response_payloads = []
+    for s in clustered_samples:
+        if isinstance(s, dict):
+            if "response_body" in s and s["response_body"] is not None:
+                response_payloads.append(s["response_body"])
+            elif "response_body" not in s:
+                response_payloads.append(s)
+        else:
+            response_payloads.append(s)
+
+    if len(response_payloads) == 1:
+        payloads_to_send = response_payloads[0]
+    else:
+        payloads_to_send = response_payloads if response_payloads else clustered_samples
+
+    system_prompt = (
+        "You are an expert engineer creating bulletproof runtime boundary validation schemas.\n"
+        "Rules:\n"
+        "1. You are validating ONLY the HTTP response body payload returned by the endpoint.\n"
+        "2. Do NOT create schemas for telemetry wrappers or HTTP metadata (request_method, request_headers, etc.).\n"
+        "3. NEVER use `any` or loosely typed primitives if a rigid type exists.\n"
+        "4. Output ONLY the raw code definition. No markdown block, no explanation, no markdown ticks.\n"
+        f"5. You MUST name the root class/type EXACTLY this string: {schema_name}\n"
+        "6. Naming Step (human-like, already decided): this export name was derived from "
+        "endpoint intent + response shape, NOT a URL slug. Keep it exactly as given. "
+        "NEVER rename it to a URL slug like https___api_... or HttpsApiCloudflare.... "
+        "The file import must look hand-written, e.g. "
+        "import { ResendEmailResponseSchema } from '@/schemas/resend_email_response';\n"
+    )
+    if lang == "python":
+        system_prompt += "6. Use Python Pydantic (import BaseModel from pydantic). Define the class."
+        sys_lang = "Python Pydantic class"
+    elif lang == "go":
+        system_prompt += "6. Use Go struct with json tags. Output ONLY the struct definition. No package."
+        sys_lang = "Go struct"
+    elif lang == "ruby":
+        system_prompt += "6. Use dry-struct or Sorbet T::Struct. Output ONLY the class."
+        sys_lang = "Ruby struct"
+    elif lang == "java":
+        system_prompt += "6. Use Java record with Jackson annotations. Output ONLY the record."
+        sys_lang = "Java record"
+    else:
+        system_prompt += "6. Use TypeScript Zod (`import { z } from 'zod'`)."
+        sys_lang = "Zod schema"
+
+    user_content = (
+        f"Endpoint: {endpoint}\n\n"
+        f"Captured API HTTP response body sample(s) ({len(payloads_to_send)} sample(s)):\n"
+        f"{json.dumps(payloads_to_send, indent=2)[:8000]}\n\n"
+        f"Generate the exact {sys_lang} validating this response body structure and export it."
+    )
+
+    resp = client.complete(
+        messages=[{"role": "user", "content": user_content}],
+        system_prompt=system_prompt,
+    )
+    
+    txt = resp.content.strip()
+    if txt.startswith("```"):
+        txt = "\n".join(txt.split("\n")[1:-1])
+    return txt
+
+def repair_unvalidated_boundary(
+    repo_dir: str,
+    endpoint: str,
+    callsite_file: str,
+    schema_name: str | None = None,
+    client = None,
+) -> dict:
+    clean_endpoint = endpoint.strip().strip("'\"")
+    explicit_schema = bool(schema_name)
+    base_name, _default_schema = _human_schema_names(clean_endpoint)
+    if not schema_name:
+        schema_name = _default_schema
+
+
+    clusters = {}
+    try:
+        def _matches(ep, req):
+            if not ep or not req:
+                return False
+            if ep in req or req in ep:
+                return True
+            try:
+                p1 = urlparse(ep).path
+                p2 = urlparse(req).path
+                return bool(p1 and p2 and (p1 == p2 or p1.rstrip('/') == p2.rstrip('/')))
+            except Exception:
+                return False
+
+        knowledge_dir = os.path.join(repo_dir, ".boundary", "knowledge")
+        exchange_file = os.path.join(knowledge_dir, "exchanges.jsonl")
+        if os.path.exists(exchange_file):
+            with open(exchange_file, "r") as f:
+                for line in f:
+                    if not line.strip(): continue
+                    try:
+                        data = json.loads(line)
+                        req_target = data.get("request_path") or data.get("request_url") or ""
+                        if clean_endpoint == "unknown-url" or _matches(clean_endpoint, req_target):
+                            key = str(data.get("status_code", data.get("response_status", "200")))
+                            if key not in clusters: clusters[key] = []
+                            clusters[key].append(data)
+                    except: pass
+    except Exception as e:
+        print("Clustering read failed:", e)
+
+    if clean_endpoint == "unknown-url" and clusters:
+        for sample_list in clusters.values():
+            if sample_list and (sample_list[0].get("request_path") or sample_list[0].get("request_url")):
+                clean_endpoint = sample_list[0].get("request_path") or sample_list[0].get("request_url")
+                if not explicit_schema:
+                    base_name, schema_name = _human_schema_names(clean_endpoint)
+                break
+
+    samples = []
+    for k, v in clusters.items():
+        if isinstance(v, list):
+            samples.extend(v)
+
+    ext = os.path.splitext(callsite_file)[1].lstrip(".")
+    lang = "python" if ext == "py" else "go" if ext == "go" else "java" if ext == "java" else "ruby" if ext == "rb" else "typescript"
+
+    # Final 1% polish: upgrade the deterministic short name with the AI
+    if client and samples and not explicit_schema:
+        ai_names = _ai_human_schema_name(client, clean_endpoint, samples)
+        if ai_names:
+            base_name, schema_name = ai_names
+
+    if client and samples:
+        schema_code = generate_schema_for_traffic(client, clean_endpoint, samples, lang, schema_name)
+    else:
+        return {
+            "success": False,
+            "reason": "Missing traffic telemetry samples for endpoint",
+            "schema_file": None,
+            "callsite_file": None,
+        }
+
+    schemas_dir = os.path.join(repo_dir, "src", "schemas") if os.path.isdir(os.path.join(repo_dir, "src")) else os.path.join(repo_dir, "schemas")
+    if not os.path.exists(schemas_dir):
+        os.makedirs(schemas_dir)
+
+    if lang == "python":
+        init_file = os.path.join(schemas_dir, "__init__.py")
+        if not os.path.exists(init_file):
+            with open(init_file, "w") as f:
+                f.write("# auto-generated by boundary\n")
+    elif lang == "go":
+        if not schema_code.strip().startswith("package "):
+            schema_code = "package schemas\n\n" + schema_code
+
+    schema_file = os.path.join(schemas_dir, f"{base_name}.{ext}")
+    with open(schema_file, "w") as f:
+        f.write(schema_code)
+
+    full_callsite = callsite_file if os.path.isabs(callsite_file) else os.path.join(repo_dir, callsite_file)
+    try:
+        with open(full_callsite, "r") as f:
+            source_code = f.read()
+    except Exception:
+        source_code = ""
+
+    rel_import = f"./schemas/{base_name}"
+    rewritten = None
+    try:
+        if hasattr(_core, "ast_polyglot_rewrite"):
+            rewritten = _core.ast_polyglot_rewrite(source_code, ext, clean_endpoint, schema_name, rel_import)
+    except Exception:
+        rewritten = None
+
+    if not rewritten or rewritten == source_code:
+        rewritten = source_code
+        if lang == "python":
+            import_stmt = f"from schemas.{base_name} import {schema_name}\n"
+            if import_stmt not in source_code:
+                rewritten = import_stmt + source_code
+        elif lang == "go":
+            mod_name = ""
+            go_mod = os.path.join(repo_dir, "go.mod")
+            if os.path.exists(go_mod):
+                try:
+                    with open(go_mod, "r") as gf:
+                        for l in gf:
+                            if l.startswith("module "):
+                                mod_name = l.split()[1].strip()
+                                break
+                except Exception:
+                    pass
+            go_pkg = f"{mod_name}/schemas" if mod_name else "./schemas"
+            if f'"{go_pkg}"' not in source_code:
+                _lines = source_code.splitlines(keepends=True)
+                _inserted = False
+                for _i, _ln in enumerate(_lines):
+                    if _ln.strip().startswith("package "):
+                        _lines.insert(_i + 1, f'\nimport "{go_pkg}"\n')
+                        _inserted = True
+                        break
+                rewritten = "".join(_lines) if _inserted else source_code
+        elif lang == "typescript" or lang == "javascript":
+            import_stmt = f"import {{ {schema_name} }} from '{rel_import}';\n"
+            if import_stmt not in source_code:
+                rewritten = import_stmt + source_code
+
+    if "catch" in rewritten or "except Exception:" in rewritten:
+        _compact = "".join(rewritten.split())
+        _swallowed = "exceptException:pass" in _compact
+        _pos = 0
+        while not _swallowed:
+            _pos = _compact.find("catch(", _pos)
+            if _pos == -1:
+                break
+            _close = _compact.find(")", _pos)
+            if _close == -1 or _close - _pos > 60:
+                _pos += 6
+                continue
+            _after = _compact[_close + 1:_close + 80]
+            if _after.startswith("{}") or _after.startswith("{return;") or _after.startswith("{returnnull"):
+                _swallowed = True
+                break
+            _pos = _close + 1
+        if _swallowed:
+            raise ValueError(f"AST Verifier Violation: Validation error is silently swallowed in {callsite_file}")
+
+    with open(full_callsite, "w") as f:
+        f.write(rewritten)
+        
+    return {
+        "success": True,
+        "schema_file": schema_file,
+        "callsite_file": full_callsite,
+    }

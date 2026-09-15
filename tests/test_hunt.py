@@ -16,6 +16,9 @@ from boundary.hunt import (
     resolve_finding,
     run_hunt,
 )
+import re as _re
+import pytest as _pytest
+from boundary.cli.main import _hunt_finding_requested
 from boundary.hunt_ports import evaluate_scope
 from boundary.patch_writer import PatchResult
 
@@ -70,7 +73,6 @@ def test_hunt_has_no_deterministic_repair_engine():
 
 
 def test_hunt_has_no_regex_or_template_fixers():
-    import re as _re
 
     src = _hunt_source()
     # No regex engine or template machinery that could author fixes.
@@ -128,7 +130,6 @@ def test_context_is_evidence_only(tmp_path):
     assert any("app.py" in f for f in ctx.relevant_files)
 
 
-# ── Scope control ──────────────────────────────────────────────────────────
 
 def test_scope_check_rejects_must_not_change():
     ok, _ = evaluate_scope(["app.py"], ["billing.py"], ["app.py"])
@@ -144,7 +145,6 @@ def test_scope_check_rejects_unrelated_files():
     assert "unrelated.py" in reason
 
 
-# ── Failure behavior: fail closed ──────────────────────────────────────────
 
 def test_hunt_unknown_finding_fails_closed(tmp_path):
     repo = _make_repo(tmp_path)
@@ -166,7 +166,6 @@ def test_hunt_without_credentials_fails_closed(tmp_path, monkeypatch):
 
 
 def test_decide_pr_rejects_anything_but_a_sealed_token():
-    import pytest as _pytest
 
     ctx = hunt_agent.HuntContext(
         finding=hunt_agent.HuntFinding("x", "stripe", "1", "2", "s"),
@@ -185,7 +184,6 @@ def test_decide_pr_rejects_anything_but_a_sealed_token():
         decide_pr({"success": True}, ctx, create_pr=True)
 
 
-# ── Verified lifecycle (mocked AI, real sandbox + real tests) ──────────────
 
 class _FakeResp:
     def __init__(self, content: str):
@@ -269,7 +267,7 @@ def test_hunt_verified_lifecycle_end_to_end(tmp_path, monkeypatch):
     assert report.test_exit_code == 0
     assert report.test_command == "pytest -q"
     assert report.files_modified == ["app.py"]
-    assert report.pr_url is None  # no repo slug, no --create-pr: deferred, never forced
+    assert report.pr_url is None
     assert os.path.isfile(report.audit_path)
     with open(os.path.join(repo, "app.py"), encoding="utf-8") as f:
         assert "# hunt: verified repair note" in f.read()
@@ -300,13 +298,11 @@ def test_hunt_failing_tests_fail_closed(tmp_path, monkeypatch):
     assert report.pr_url is None
     assert "could not safely verify" in report.reason
     with open(os.path.join(repo, "app.py"), encoding="utf-8") as f:
-        assert "hunt" not in f.read()  # rolled back
+        assert "hunt" not in f.read()
 
 
-# ── CLI routing ────────────────────────────────────────────────────────────
 
 def test_cli_routes_finding_id_to_hunt(tmp_path):
-    from boundary.cli.main import _hunt_finding_requested
     assert _hunt_finding_requested(argparse.Namespace(
         root_dir="stripe-a1b2c3", finding=None, issue=None)) is True
     assert _hunt_finding_requested(argparse.Namespace(

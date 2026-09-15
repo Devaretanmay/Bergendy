@@ -10,6 +10,8 @@ from boundary.llm import LLMClient, LLMConfig
 from boundary.redact import redact_record, redact_secrets
 
 
+from boundary.hunt import write_audit
+
 def test_redacts_provider_key_shapes():
     cases = [
         "sk-ant-abcdefghij123456",
@@ -97,7 +99,6 @@ def test_redact_record_scrubs_nested_audit_data():
 
 
 def test_write_audit_persists_no_secrets(tmp_path):
-    from boundary.hunt import write_audit
 
     path = write_audit(str(tmp_path), "f1", {
         "final": "refused_unverified",

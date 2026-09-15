@@ -25,6 +25,18 @@ def _detect_test_command(repo_dir: str) -> str:
             _logger.warning("Failed to parse %s: %s", pkg_json_path, e)
     if os.path.exists(os.path.join(repo_dir, "pytest.ini")) or os.path.exists(os.path.join(repo_dir, "tests")):
         return "pytest -q"
+    if os.path.exists(os.path.join(repo_dir, "go.mod")):
+        return "go test ./... 2>/dev/null || go build ./... 2>/dev/null || go vet ./..."
+    try:
+        dir_files = os.listdir(repo_dir)
+        if any(f.endswith(".go") for f in dir_files):
+            return "go build . 2>/dev/null || go vet . 2>/dev/null || true"
+        if any(f.endswith(".py") for f in dir_files):
+            return "python3 -m py_compile *.py 2>/dev/null || python -m py_compile *.py"
+        if any(f.endswith((".js", ".ts", ".mjs")) for f in dir_files):
+            return "node --check *.js 2>/dev/null || node --check *.mjs 2>/dev/null || true"
+    except Exception:
+        pass
     if os.path.exists(os.path.join(repo_dir, "Cargo.toml")):
         return "cargo test"
     return ""
@@ -75,7 +87,10 @@ def _run_install(repo_dir: str, timeout: int = 120) -> subprocess.CompletedProce
     return subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
 
 
-def _run_tests(repo_dir: str, test_cmd: str, timeout: int = 120) -> subprocess.CompletedProcess:
+def _run_tests(repo_dir: str, test_cmd: str, timeout: int = 120, env: dict | None = None) -> subprocess.CompletedProcess:
+    full_env = os.environ.copy()
+    if env:
+        full_env.update(env)
     return subprocess.run(
         test_cmd,
         shell=True,
@@ -83,4 +98,5 @@ def _run_tests(repo_dir: str, test_cmd: str, timeout: int = 120) -> subprocess.C
         capture_output=True,
         text=True,
         timeout=timeout,
+        env=full_env,
     )

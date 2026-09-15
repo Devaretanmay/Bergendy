@@ -1,3 +1,4 @@
+from boundary.cli.enterprise_commands import cmd_resolve
 import argparse
 import dataclasses
 import graphlib
@@ -30,6 +31,16 @@ from boundary.config import (
     load_config,
     find_workspace_root,
 )
+from boundary import hunt as hunt_agent
+from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
+import json as _json
+from boundary.audit import require_structural_evidence
+from boundary.runtime_scan import render_score
+from boundary import shield as _shield
+from boundary.contracts import status as _cstatus
+from boundary.capture import cmd_dev as _dev
+import dataclasses as _dc
+from boundary.hunt import decide_pr, gather_context, resolve_finding
 from boundary import autopatch
 from boundary.audit import changed_since_index, run_audit
 from boundary.drift import detect_changes, detect_drift
@@ -1999,7 +2010,6 @@ def cmd_check(args):
             pass
     if getattr(args, "format", "cli") == "cli":
         try:
-            from boundary import hunt as hunt_agent
             findings = hunt_agent.list_findings(root_path)
             if findings:
                 hunt_agent.persist_findings(root_path, findings)
@@ -2022,7 +2032,6 @@ def _print_runtime_section(root_path: str, fmt: str = "cli") -> None:
     if fmt != "cli":
         return
     try:
-        from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
         b = scan_runtime_boundaries(root_path)
         s = boundary_score(b)
         print()
@@ -2039,15 +2048,12 @@ def _print_runtime_section(root_path: str, fmt: str = "cli") -> None:
 
 def cmd_score(args):
     """Boundary Score: SDK drift (engine) + runtime validation, one number."""
-    import json as _json
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
     summary = audit_dependency_graph(root_path)
     try:
-        from boundary.audit import require_structural_evidence
         summary = require_structural_evidence(summary, root_path)
     except Exception:
         pass
-    from boundary.runtime_scan import boundary_score, render_score, scan_runtime_boundaries
     report = scan_runtime_boundaries(root_path)
     s = boundary_score(report)
     if getattr(args, "format", "cli") == "json":
@@ -2065,9 +2071,7 @@ def cmd_score(args):
 
 def cmd_scout(args):
     """Scout (read-only audit): Howl-mode mapping + runtime warnings, touches nothing."""
-    import json as _json
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
-    from boundary.runtime_scan import scan_runtime_boundaries
     report = scan_runtime_boundaries(root_path)
     if getattr(args, "format", "cli") == "json":
         print(_json.dumps(report, indent=2))
@@ -2084,9 +2088,7 @@ def cmd_scout(args):
 
 def cmd_shield(args):
     """Shield (enforce & fix): hooks, schema generation, drift status."""
-    import json as _json
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
-    from boundary import shield as _shield
     if getattr(args, "off", False):
         print(_shield.remove_hook(root_path))
         return
@@ -2105,8 +2107,6 @@ def cmd_shield(args):
         print("Next: import the schema and .parse() at each callsite, then re-run score.")
         return
     if getattr(args, "status", False):
-        from boundary.contracts import status as _cstatus
-        from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
         report = scan_runtime_boundaries(root_path)
         s = boundary_score(report)
         d = _cstatus(root_path)
@@ -2124,7 +2124,6 @@ def cmd_shield(args):
 
 def cmd_shield_check(args):
     """Fail-closed gate for the pre-commit hook and CI (exit 1 = blocked)."""
-    from boundary import shield as _shield
     ok, msg = _shield.check_files(getattr(args, "path", ".") or ".", getattr(args, "files", None))
     print(msg)
     if not ok:
@@ -2132,7 +2131,6 @@ def cmd_shield_check(args):
 
 
 def cmd_dev(args):
-    from boundary.capture import cmd_dev as _dev
     sys.exit(_dev(args))
 
 
@@ -2175,8 +2173,6 @@ def cmd_hunt(args):
     reasons with AI, authors the patch with AI, verifies in an isolated
     sandbox, and fails closed when correctness cannot be established.
     """
-    from boundary import hunt as hunt_agent
-
     raw = getattr(args, "root_dir", ".") or "."
     explicit = getattr(args, "finding", None) or None
     issue = getattr(args, "issue", None) or None
@@ -2208,7 +2204,6 @@ def cmd_hunt(args):
     )
 
     if getattr(args, "json", False):
-        import dataclasses as _dc
         # default=str: the sealed token carries a private sentinel object
         # that is structural, not serializable — stringify, never leak.
         print(json.dumps(_dc.asdict(report), indent=2, default=str))
@@ -2231,7 +2226,6 @@ def cmd_hunt(args):
             except (EOFError, KeyboardInterrupt):
                 answer = ""
             if answer in ("y", "yes"):
-                from boundary.hunt import decide_pr, gather_context, resolve_finding
                 finding = resolve_finding(repo_dir, report.finding_id)
                 if finding is not None and report.verified is not None:
                     ctx = gather_context(repo_dir, finding)
@@ -2668,6 +2662,9 @@ def main():
     init_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
 
     subparsers.add_parser("status", help="Show workspace status: agents, lanes, security events")
+    p_resolve = subparsers.add_parser("resolve", help="Resolve unvalidated boundaries")
+    p_resolve.add_argument("path", nargs="?", default=".", help="Target repository directory")
+    p_resolve.add_argument("--target", default="", help="Specific file to resolve")
 
     subparsers.add_parser("doctor", help="Blueprint readiness: auth + indexed + test command")
 
@@ -2969,6 +2966,7 @@ def main():
         "init": cmd_init,
         "auth": cmd_auth,
         "status": cmd_status,
+        "resolve": cmd_resolve,
         "doctor": cmd_doctor,
         "inspect": cmd_inspect,
         "run": cmd_run,

@@ -4,6 +4,8 @@ import tempfile
 
 from boundary import autopatch
 
+from boundary import _core
+
 OLD_SPEC = json.dumps({
     "openapi": "3.0.0",
     "info": {"title": "Payments API", "version": "2024-06-01"},
@@ -175,7 +177,6 @@ def test_workflow_validate_and_order():
 def test_no_deterministic_patcher_surface():
     """No AST patch engine may exist behind the SDK: repairs are AI-authored."""
     assert not hasattr(autopatch, "apply_patch")
-    from boundary import _core
 
     assert not hasattr(_core, "patch_apply")
 

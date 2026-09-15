@@ -147,6 +147,18 @@ fn dependency_graph_audit(repo_root: &str) -> PyResult<String> {
     serde_json::to_string_pretty(&summary).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+#[pyfunction]
+fn ast_polyglot_rewrite(
+    source_code: &str,
+    _ext: &str,
+    endpoint: &str,
+    schema_name: &str,
+    import_path: &str,
+) -> PyResult<String> {
+    crate::engines::rewriter::inject_schema_validation(source_code, endpoint, schema_name, import_path)
+        .map_err(|e| PyValueError::new_err(e))
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sandbox_apply, m)?)?;
@@ -163,5 +175,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(trust_report_render, m)?)?;
     m.add_function(wrap_pyfunction!(dependency_graph_build, m)?)?;
     m.add_function(wrap_pyfunction!(dependency_graph_audit, m)?)?;
+    m.add_function(wrap_pyfunction!(ast_polyglot_rewrite, m)?)?;
     Ok(())
 }

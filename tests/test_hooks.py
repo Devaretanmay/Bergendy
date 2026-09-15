@@ -107,7 +107,6 @@ class TestSandboxRunner(TempCase):
         # test_e2e_full_suite.py, the CLI ``sleep`` binary cannot be exec'd
         # at all; the box surfaces that as a non-zero return code instead of
         # a TimeoutExpired. The invariant we pin here is "a too-long command
-        # must not return 0":
         res = SandboxRunner(workdir=self.workdir, sandbox=False).run(
             "sleep 3", timeout_s=1, snapshot=False,
         )

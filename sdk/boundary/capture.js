@@ -1,8 +1,6 @@
 // Boundary SDK capture shim (500-line budget, this file is ~60).
 // Usage: import "boundary-sdk/capture" once at app startup, then run the app
 // via `boundary dev -- <cmd>`. When BOUNDARY_CAPTURE=1 it wraps global fetch
-// and forwards a truncated clone of each JSON response to $BOUNDARY_SOCKET
-// as newline-delimited {endpoint, sample} frames. Never throws, never blocks.
 const net = require("node:net");
 
 const sock = process.env.BOUNDARY_SOCKET;
