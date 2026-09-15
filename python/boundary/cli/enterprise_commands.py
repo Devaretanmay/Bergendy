@@ -132,7 +132,6 @@ def cmd_resolve(args: Any) -> None:
     """Execute autonomous schema synthesis, AST callsite patching, and isolated verification."""
     workdir = os.path.abspath(getattr(args, "path", ".") or ".")
     target_file = getattr(args, "target", None)
-    resolve_drift = getattr(args, "drift", False)
 
     print(header("Resolving Unprotected Boundaries"))
 
@@ -314,7 +313,7 @@ def cmd_verify(args: Any) -> None:
         print(f"Routing outbound traffic to local proxy ({dim(proxy_url)})...")
         print("Executing test suite...\n")
 
-        proc = _run_tests(workdir, test_cmd, timeout=60, env=env)
+        _run_tests(workdir, test_cmd, timeout=60, env=env)
         
         print(f"  {green('[PASS]')} Test execution completed")
         print(f"  {green('[PASS]')} 0 network egress violations")

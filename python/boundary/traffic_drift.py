@@ -6,6 +6,9 @@ from typing import Any
 NO_IMPACT = "NO_IMPACT"
 IMPACT_AI = "IMPACT_AI"
 IMPACT_QUARANTINE = "IMPACT_QUARANTINE"
+
+
+@dataclass
 class TrafficDriftSource:
     """A system/contract the repository depends upon, at a detected drift."""
     

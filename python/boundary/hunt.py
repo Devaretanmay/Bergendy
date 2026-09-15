@@ -2038,15 +2038,18 @@ def repair_unvalidated_boundary(
         if os.path.exists(exchange_file):
             with open(exchange_file, "r") as f:
                 for line in f:
-                    if not line.strip(): continue
+                    if not line.strip():
+                        continue
                     try:
                         data = json.loads(line)
                         req_target = data.get("request_path") or data.get("request_url") or ""
                         if clean_endpoint == "unknown-url" or _matches(clean_endpoint, req_target):
                             key = str(data.get("status_code", data.get("response_status", "200")))
-                            if key not in clusters: clusters[key] = []
+                            if key not in clusters:
+                                clusters[key] = []
                             clusters[key].append(data)
-                    except: pass
+                    except Exception:
+                        pass
     except Exception as e:
         print("Clustering read failed:", e)
 
@@ -2126,9 +2129,9 @@ def repair_unvalidated_boundary(
             if os.path.exists(go_mod):
                 try:
                     with open(go_mod, "r") as gf:
-                        for l in gf:
-                            if l.startswith("module "):
-                                mod_name = l.split()[1].strip()
+                        for mod_line in gf:
+                            if mod_line.startswith("module "):
+                                mod_name = mod_line.split()[1].strip()
                                 break
                 except Exception:
                     pass
