@@ -1,365 +1,130 @@
-# Boundary CLI Reference & User Guide
+# Boundary CLI Reference & Command Guide
 
-Boundary is autonomous software maintenance for systems that change. It detects contract drift, repairs the code, verifies against your real test suite, and delivers the evidence as a PR.
+Boundary is autonomous software maintenance and runtime boundary defense for systems that change.
 
-> **“Boundary understands the changes the outside world makes to software — and repairs them.”**
+> **“APIs drift. Upstream payloads change. Boundary detects unguarded boundaries, synthesizes rigid schemas, and verifies them in hermetic sandboxes.”**
 
 ---
 
-## The Public CLI Contract
+## Command Overview
 
 ```text
-Core Maintenance Commands:
-  boundary auth                     Connect & configure BYOK AI provider (needed for AI repair)
-  boundary connect [owner/repo]     Connect GitHub account, choose repository, and issue Repository Key
-  boundary active [owner/repo]      Show or switch the active repository working context
-  boundary status                   Show current workspace and repository connection status
-  boundary consult [path]           Consult mode: assess with AI reasoning, file Issue, modify nothing (aliases: howl, @howl)
-  boundary work [path] [--provider] Work mode: repair from a finding ID or provider, sandbox-verify, report evidence, open PR (aliases: fix, maintain, update, hunt, @hunt)
-  boundary disconnect [owner/repo]  Disconnect repository registration and clear active working context
+Core Boundary Commands:
+  boundary auth                     Connect & configure BYOK AI provider (Groq, OpenAI, Anthropic)
+  boundary doctor                   Verify sandbox, AI provider, compilers, and test runner readiness
+  boundary scan [path]              Scan repository for exposed, unvalidated HTTP/API boundaries
+  boundary resolve [path]           Synthesize schemas from traffic and patch callsites
+  boundary guard                    Pre-commit hook enforcing that no unvalidated boundaries are committed
+  boundary verify [path]            Run hermetic test suite with Ghost Proxy replaying canned exchanges
 
-Diagnostic & Advanced Commands:
-  boundary doctor                   Product readiness: GitHub, AI, index, knowledge, tests
-  boundary index [path]             Index repository contracts & callsites (AST evidence scan)
-  boundary check [path]             Detect contract changes & impact (read-only; needs no AI key)
-  boundary reviews [path]           List past maintenance runs from the ledger
-  boundary onboard [path]           Guided setup: auth → connect → doctor
-  boundary providers                List monitored contract sources & migrations
-  boundary app serve                Run GitHub App webhook listener
-  boundary pr                       Review a pull request with the contract guard
-
-Legacy / advanced (workflows, sessions, lanes)
-  boundary init                     Initialize a Boundary workspace (legacy path; onboarding no longer needs this)
-  boundary status                   Show workspace health & active executions
-  boundary inspect                  Dump declared compartments & policies
-
-Agents
-  boundary claude | opencode | codex | cursor | aider
-                                   Run coding agent in governed OS sandbox
-  boundary exec -- <cmd>            Run arbitrary command inside a compartment
-
-Workflows
-  boundary -w <name>                Create a new workflow branch
-  boundary step <workflow> <target> Add a step with auto-inferred properties
-  boundary --run <workflow>         Execute declared workflow DAG
-
-Changes
-  boundary diff                     Review change sets attributed by agent
-  boundary apply                    Promote changes to workspace baseline
-  boundary commit -m <msg>          Commit to Git with RFC-5322 metadata trailers
-  boundary undo                     Instant physical snapshot rollback
-  boundary restore                  Restore from session checkpoint
+Advanced & Diagnostic Commands:
+  boundary check [path]             Audit external dependency graph and contract drift
+  boundary graph [path]             Inspect external dependency callsites and manifest linkages
+  boundary init [path]              Initialize .boundary workspace metadata in current repository
+  boundary app serve                Run autonomous GitHub App webhook daemon
 ```
 
 ---
 
-## 0. Product Onboarding
+## 1. Authentication & System Diagnostics
+
+### `boundary auth`
+Configures credentials for your preferred AI provider (BYOK). Boundary never locks you to a proprietary model.
 
 ```bash
-boundary auth              # Connect AI provider (OpenAI / Anthropic / local). Needed only for AI repair.
-boundary doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Test command, Monitoring
-boundary index .           # AST evidence scan → .boundary/graph.json + knowledge test recipes
-boundary check .           # Read-only drift & impact audit (works with no AI key configured)
-boundary fix .             # Auto-detect provider, repair, sandbox-verify, report evidence
+# Interactive setup
+boundary auth
+
+# View or reset stored credentials
+boundary auth --status
+boundary auth --clear
 ```
 
-`check` never modifies code. `fix` with no safe path and no AI credentials refuses loudly
-(`NOT RUN … REFUSED / INCOMPLETE`, zero files touched) instead of faking success.
+Supported environment variables:
+- `GROQ_API_KEY`: Groq API Key (recommended: fast inference for schema synthesis)
+- `OPENAI_API_KEY`: OpenAI API Key
+- `ANTHROPIC_API_KEY`: Anthropic API Key
+
+Credentials are saved with `0600` permissions in `~/.boundary/credentials.json`.
 
 ---
-
-## 1. Workspace Commands (legacy path)
-
-> `init` is the legacy workspace path. Normal onboarding (`auth → index → check → fix`) does not need it.
-
-### `boundary init`
-Initializes a `.boundary/` control plane in the current directory:
-- Detects installed agents (`claude`, `codex`, `opencode`, `cursor`, `aider`).
-- Configures default security compartments (`default`, `research`, `builder`, `network`, `tester`).
-- Sets up execution tracking and BLAKE3 snapshot storage.
-
-```bash
-boundary init
-```
-
----
-
-### `boundary status`
-Shows live workspace health, active agents, recent executions, and security events.
-
-```bash
-boundary status
-```
-
----
-
-### `boundary inspect`
-Dumps declarative topology, active compartments, filesystem permissions, and network policies.
-
-```bash
-boundary inspect
-boundary inspect --json
-```
-
----
-
-## 2. Interactive Agent Execution
-
-### Direct Agent Commands (`boundary <agent>`)
-Launch any interactive coding agent inside an isolated kernel sandbox with full native terminal TUI fidelity (colors, alternate screen, Ctrl+C, Ctrl+D, window resizing):
-
-```bash
-boundary claude
-boundary opencode
-boundary codex
-boundary cursor
-boundary aider
-```
-
-**Under the Hood:**
-1. Resolves genuine binary on system `PATH`.
-2. Allocates a pseudo-terminal master/slave pair (`PtySupervisor`).
-3. Takes a pre-execution BLAKE3 hash snapshot of the workspace.
-4. Applies OS kernel sandboxing (Seatbelt on macOS / Landlock on Linux).
-5. Captures file changes upon exit into `boundary diff`.
-
----
-
-### `boundary exec`
-Runs any arbitrary script, tool, or shell command inside an explicitly selected compartment:
-
-```bash
-# Run inside default compartment
-boundary exec -- python3 script.py
-
-# Run inside 'research' (read-only filesystem, network allowed)
-boundary exec --compartment research -- python3 scraper.py
-
-# Run inside 'builder' (read-write filesystem, network restricted)
-boundary exec --compartment builder -- pytest tests/
-```
-
----
-
-## 3. Agentic Workflows (Git-Style Pipelines)
-
-### `boundary -w <name>` (or `boundary workflow create <name>`)
-Creates a new workflow branch in `workflows/<name>.yaml` or `.boundary/workflows/<name>.yaml`:
-
-```bash
-boundary -w invoice-pipeline
-```
-
----
-
-### `boundary step <workflow> <target>`
-Adds steps to your workflow branch. Point Boundary at an individual file, a command, or an entire directory:
-
-```bash
-# Add a single script with auto-inferred runner & compartment
-boundary step invoice-pipeline src/ocr.py
-
-# Ingest an entire directory (scans and auto-chains scripts)
-boundary step invoice-pipeline src/
-
-# Add a test or shell command
-boundary step invoice-pipeline "pytest tests/" --compartment tester
-```
-
----
-
-### `boundary --run <workflow>` (or `boundary run <workflow>`)
-Executes the declared workflow DAG under kernel isolation:
-
-```bash
-boundary --run invoice-pipeline
-```
-
-- Topologically sorts the execution graph.
-- Executes each step in its designated compartment (`research`, `builder`, `tester`, `reviewer`).
-- If an upstream step fails, downstream dependent steps are cleanly `SKIPPED` to prevent cascading data corruption. Independent branches continue running.
-
----
-
-### `boundary workflow show <workflow>`
-Inspects and visualizes declared workflow DAG nodes, commands, and dependencies:
-
-```bash
-boundary workflow show invoice-pipeline
-```
-
----
-
-## 4. Change Management & Git Provenance
-
-### `boundary diff`
-Review change sets attributed by execution ID and agent name:
-
-```bash
-boundary diff               # Show all execution change sets
-boundary diff --unapplied   # Only show pending changes not yet applied
-boundary diff --trailers    # View formatted RFC-5322 Git metadata trailers
-```
-
----
-
-### `boundary apply`
-Promotes an execution's recorded change set into the workspace baseline. Detects conflicts if another execution modified the same files.
-
-```bash
-boundary apply                         # Apply all pending completed executions
-boundary apply --execution exec_101    # Apply a specific execution
-boundary apply --force                 # Apply even if changes overlap
-```
-
----
-
-### `boundary commit`
-Commits applied agent changes to Git, automatically embedding structured RFC-5322 metadata trailers for auditability and compliance:
-
-```bash
-boundary commit -m "feat(auth): implement token verification"
-```
-
-*Commit will contain metadata trailers (per the [Agent Provenance Trailers spec](../SPEC.md)):*
-```text
-Agent-Origin: agent
-Agent-Agent: claude
-Agent-Execution: exec_1787082469762
-Agent-Compartment: builder
-Agent-Sandbox: clean
-```
-
----
-
-### `boundary undo`
-Physically restores the workspace to its exact state before the execution ran using the pre-execution BLAKE3 hash snapshot (restores in ~2 milliseconds):
-
-```bash
-boundary undo                         # Undo latest execution
-boundary undo --execution exec_101    # Undo a specific execution
-```
-
----
-
-### `boundary restore [session_id]`
-Restores workspace files from an Agent Session snapshot checkpoint:
-
-```bash
-boundary restore                       # Restores latest session checkpoint
-boundary restore sess_1787082470931    # Restores specific session checkpoint
-```
-
----
-
-## 5. External-Change Intelligence & Autonomous Maintenance
-
-### `boundary auth [--provider … --api-key …] [--status] [--clear]`
-Connects a BYOK AI provider, saved to `~/.boundary/credentials.json` (0600), with per-installation
-scoping available. Credentials are required only when AI reasoning/generation is actually needed —
-`index` and `check` work without them. `--status` shows the masked active provider.
 
 ### `boundary doctor`
-Prints product readiness: GitHub CONNECTED / NOT CONFIGURED, AI provider, repository Indexed state,
-Knowledge Base READY / STALE / MISSING, detected test command, and monitoring ACTIVE / NOT ACTIVE,
-with remediation hints.
-
-### `boundary index [path]`
-AST evidence scan: callsites, manifests, dependency graph → `.boundary/graph.json`, plus
-`index_state.json` (commit SHA + mtimes) for incremental re-indexing and knowledge test recipes.
-
-### `boundary check [path]` (alias: `scan`, `audit`)
-Day-0 external-change dependency audit and risk register. Scans manifests, lockfiles, and AST callsites to report at-risk, deprecated, or breaking external integrations:
+Validates that your operating system environment, compilers, and AI credentials are fully operational.
 
 ```bash
-boundary check .
-boundary check . --format=github-issue    # Markdown for GitHub Issue
-boundary check . --format=json            # Machine-readable JSON risk register
-boundary check . --write-graph            # Persists .boundary/graph.json
+boundary doctor
 ```
+
+Checks performed:
+- Sandbox availability (macOS `sandbox-exec` or Linux `landlock`).
+- AI provider reachability and token validity.
+- Local compilers and runtimes (`python3`, `node`, `go`).
+- Rust Ghost Proxy socket readiness.
 
 ---
 
-### `boundary graph [path]`
-Queries and inspects the repository's External-Change Dependency Graph (providers, contracts, manifest dependencies, wrapper clients, AST callsites, and active edges):
+## 2. Runtime Boundary Defense Suite
+
+### `boundary scan [path]`
+Performs an AST analysis across the codebase, identifying all network boundaries where external data enters the application without strict schema validation.
 
 ```bash
-boundary graph .
-boundary graph . --json
+# Scan current repository
+boundary scan
+
+# Scan a specific directory
+boundary scan ./src
 ```
+
+Supported callsites:
+- **TypeScript / JavaScript**: `fetch()`, `axios.get()`, `axios.post()`, unvalidated promises, and `any` casts.
+- **Python**: `requests.get()`, `httpx.get()`, `aiohttp`, and unmodeled `.json()` access.
+- **Go**: `http.Get()`, `http.Post()`, `client.Do()`, and unchecked JSON unmarshaling.
 
 ---
 
-### `boundary hunt <finding-id>` (aliases: `fix`, `maintain`, `update`, `work`, `@hunt`)
-Hunt starts from a finding ID printed by `boundary check` — then rebuilds live
-context (branch, exact SHA, active work, callsites, tests, verified memory),
-reasons with AI, authors the patch with AI, verifies in an isolated sandbox
-worktree, and fails closed with no PR unless the repair verifies green and
-scope-clean. One Hunt runs per repository at a time (a second attempt waits
-on a repo lock, then refuses loudly instead of overlapping):
+### `boundary resolve [path] [--target <file>]`
+The core automated repair command. Extracts captured HTTP response payloads, isolates the response body, prompts the AI to synthesize a strict schema, and patches the callsite.
 
 ```bash
-boundary check .                # note the finding ID, e.g. stripe-3a9c79
-boundary hunt stripe-3a9c79     # full reasoning → repair → sandbox → verify cycle
-boundary hunt stripe-3a9c79 --create-pr --repo owner/repo
+# Resolve all unvalidated boundaries across the codebase:
+boundary resolve
+
+# Resolve a specific file:
+boundary resolve --target src/resend.ts
 ```
 
-The provider-driven form runs the same engine with an explicit target:
-
-```bash
-boundary work .                       # Auto-detect provider from manifests
-boundary work . --provider stripe
-boundary work . --provider openai --from v3.28.0 --to v4.0.0
-boundary work . --detect              # Detect installed API providers
-boundary work . --show-pr             # Preview Developer Trust PR body
-boundary work . --create-pr --repo owner/repo
-```
-
-All work-family names share one parser (`aliases=[...]`); `args.command`
-carries the name actually typed.
-
-### `boundary consult [path] [--repo owner/repo]`
-Same AI reasoning as `fix` — codebase context, change context, maintenance memory, impact
-analysis — but Consult authority: assess and report only. Files a GitHub Issue with findings,
-affected files, inheritance notes, recommendation, and confidence, then declares no code was
-modified. Requires AI credentials (refuses loudly without them); requires a resolvable repo
-to file the Issue. Start here to build trust before enabling Work:
-
-```bash
-boundary consult . --repo owner/repo
-```
-
-### `boundary reviews [path]` / `boundary onboard [path]` / `boundary logout`
-- `reviews` lists past maintenance runs (provider, versions, outcome) from `.boundary/history.json`.
-- `onboard` chains `auth → index → doctor` as one guided setup.
-- `logout` clears stored credentials. `auth --status` also reports GitHub identity when a token is present.
-
-On refusal (no safe path, no AI credentials): `Repository Tests: NOT RUN`, zero files modified,
-`REFUSED / INCOMPLETE`. Tests are never reported PASSED unless they actually ran and exited 0.
+Key features:
+- **Payload Isolation**: Extracts only `response_body` from telemetry exchanges, completely eliminating wrapper hallucinations (`request_method`, `request_headers`).
+- **No-Swallow AST Verification**: The AST patcher strictly rejects any patch that catches validation errors in silent blocks (`catch { return null }` or `except: pass`). Errors must bubble to application error handlers.
+- **Polyglot Output**:
+  - TypeScript: Synthesizes `z.object({...})` using Zod.
+  - Python: Synthesizes `BaseModel` classes using Pydantic.
+  - Go: Synthesizes typed structs with `json:"..."` tags.
 
 ---
 
-### `boundary providers`
-Lists the built-in provider contract registry and available breaking-change migration specifications:
+### `boundary guard`
+A lightweight, fast check designed for git pre-commit hooks or local developer workflows.
 
 ```bash
-boundary providers
-boundary providers --json
+boundary guard
 ```
+
+- Scans staged files for newly added unvalidated API calls.
+- Exits with non-zero code if an unvalidated boundary is found.
 
 ---
 
-### `boundary app [serve|status]`
-Runs the GitHub App continuous webhook listener daemon for automated PR drift detection and verification.
-A webhook secret is required (fail-closed); `--no-secret` is local-debugging only:
+### `boundary verify [path]`
+Validates application code in a completely network-blocked sandbox while replaying recorded traffic through the **Ghost Proxy** (`127.0.0.1:54321`).
 
 ```bash
-boundary app serve --port 8080 --secret $BOUNDARY_WEBHOOK_SECRET
+boundary verify
 ```
 
-On installation events Boundary persists the installation record, runs Day-0 indexing where a
-checkout is available, and tracks per-repository state (PENDING → INDEXED → READY).
-
-### `boundary pr [number]`
-Runs the contract guard against a local checkout of a PR (mergeable only on real green tests).
-
+- Outbound public internet access is dropped.
+- Requests matching recorded `HttpExchange` logs are returned by the local Axum proxy with their recorded status codes and bodies.
+- Unmocked requests receive a `404 Unmocked Boundary` response.
+- Verifies that newly generated schemas parse the real-world payload responses.

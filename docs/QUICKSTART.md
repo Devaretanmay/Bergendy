@@ -1,114 +1,136 @@
 # Boundary Quickstart Guide
 
-Get up and running with Boundary in under 2 minutes.
+Get up and running with Boundary runtime boundary defense in under 2 minutes.
 
-> **“Boundary understands the changes the outside world makes to software — and repairs them.”**
+> **“APIs drift. Upstream payloads change. Boundary detects unguarded boundaries, synthesizes rigid schemas, and verifies them in hermetic sandboxes.”**
 
 ---
 
 ## 1. Installation
 
+Install Boundary from PyPI:
+
 ```bash
 pip install boundary
 ```
 
----
-
-## 2. Onboarding (in under 10 seconds)
+Or build from source with the native Rust engine:
 
 ```bash
-cd my-project
-
-boundary init              # Detects repo, checks GitHub & AI, runs AST evidence scan
-boundary auth              # Connect your BYOK AI provider (Anthropic, OpenAI, Ollama)
+git clone https://github.com/Devaretanmay/Boundary.git
+cd Boundary
+maturin develop --release
 ```
 
-Outputs your repository readiness:
+---
 
+## 2. Authentication (BYOK)
+
+Configure your AI provider API key (Groq, OpenAI, or Anthropic):
+
+```bash
+# Interactive setup:
+boundary auth
+
+# Or export via environment variable:
+export GROQ_API_KEY="your-api-key"
+# or
+export OPENAI_API_KEY="your-api-key"
+```
+
+Verify your environment readiness:
+
+```bash
+boundary doctor
+```
+
+Outputs:
 ```text
-[OK] GitHub connected (account: Devaretanmay)
-[OK] Repository detected: acme/payments
-[OK] Repository indexed (3 providers detected, 14 callsites mapped)
-[OK] AI provider: Anthropic (claude-3-5-sonnet)
-[OK] Maintenance memory initialized (.boundary/knowledge/)
-
-READY
-
-Boundary can now:
-  Consult — find and explain maintenance issues (boundary consult)
-  Work    — repair, verify, and open PRs (boundary work)
+System Readiness Check
+  [OK] Sandbox environment: macOS sandbox-exec supported
+  [OK] AI provider: Groq (openai/gpt-oss-120b)
+  [OK] Ghost Proxy: Ready (127.0.0.1:54321)
+  [OK] Compilers detected: python3, node, go
 ```
 
 ---
 
-## 3. Day-0 Dependency Check & Risk Register
+## 3. Step-by-Step Workflow
 
-Immediately scan your codebase for breaking upstream changes, deprecated callsites, and auto-repairable integrations. Read-only — works with no AI credentials configured:
+### Step 1: Scan for Unvalidated Boundaries
+Scan your repository for external HTTP callsites that lack runtime schema validation or use unsafe casts:
 
 ```bash
-# Run terminal risk register:
-boundary check .
+boundary scan
+```
 
-# Export as GitHub Issue markdown:
-boundary check . --format=github-issue
+Example output:
+```text
+Scanning runtime boundaries in .
+  [EXPOSED] src/resend.ts:116 -> https://api.resend.com/emails (no schema validation)
+  [EXPOSED] weather.py:12 -> https://api.weatherapi.com/v1/current.json (untyped dict access)
+  [EXPOSED] tools/auth/gitee.go:106 -> https://gitee.com/api/v5/emails (unchecked struct unmarshal)
 
-# Inspect the External-Change Dependency Graph:
-boundary graph .
+Scan Summary:
+  Files Scanned:          42
+  Exposed Boundaries:     3
+  Auto-Resolvable:        3
 ```
 
 ---
 
-## 4. Consult First, Then Work (Howl & Hunt)
-
-New teams start in Consult (Howl): same AI reasoning, zero code changes, findings filed
-as a GitHub Issue. Graduate to Work (Hunt) when the reasoning earns it.
+### Step 2: Resolve Unvalidated Boundaries
+Synthesize rigid schemas from captured runtime traffic and patch the callsites:
 
 ```bash
-boundary consult . --repo owner/repo   # Assess only, files an Issue (Howl)
-boundary check .                       # note the finding ID, e.g. stripe-3a9c79
-boundary hunt stripe-3a9c79            # Repair, verify, report (Hunt)
+# Resolve all detected boundaries:
+boundary resolve
+
+# Or resolve a specific file:
+boundary resolve --target src/resend.ts
 ```
 
-See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
+What Boundary does:
+1. **Extracts traffic telemetry**: Loads captured HTTP spans.
+2. **Isolates payload context**: Extracts only `response_body` (ensuring zero wrapper fields like `request_method` or `request_headers` pollute the schema).
+3. **Synthesizes typed schema**:
+   - TypeScript: Strict **Zod** schema (`z.object({...})`).
+   - Python: Strict **Pydantic** model (`class Schema(BaseModel):`).
+   - Go: Typed **Go struct** with json tags.
+4. **Patches callsite**: Rewrites code to call `.parse()`, `model_validate()`, or typed unmarshaling, verified with the **No-Swallow AST Rule** (no silent error suppression).
+5. **Replays against Ghost Proxy**: Validates the newly patched code in an isolated sandbox.
 
-## 5. Autonomous Continuous Maintenance
+---
 
-Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
-Boundary's AI reasons about the change against your repository and authors verified repairs —
-there is no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
+### Step 3: Verify in Hermetic Sandbox
+Run verification tests inside a network-blocked sandbox where external calls are replayed locally by the Rust Ghost Proxy:
 
 ```bash
-# Auto-detect provider and repair:
-boundary work .
+boundary verify
+```
 
-# Targeted migration and open PR:
-boundary work . --provider stripe
-boundary work . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+Output:
+```text
+Verification Environment (Sandbox)
+  ├─ Network:   Isolated (Ghost Proxy active on 127.0.0.1:54321)
+  ├─ Replaying: 3 captured HTTP exchanges
+  └─ Executing: `npm test`
+
+  [PASS] verification tests passed
+
+Resolution Complete
+  ├─ Schemas generated: 1
+  ├─ Files patched:     1
+  └─ Sandboxed verify:  Passed
 ```
 
 ---
 
-## 6. Interactive Coding Agents & Sandboxed Governance (advanced)
-
-Run terminal coding agents inside a kernel-enforced sandbox with full native TUI fidelity:
+### Step 4: Pre-Commit Guard
+Add Boundary to your pre-commit workflow to prevent unvalidated API calls from ever reaching production:
 
 ```bash
-# Launch Claude Code, OpenCode, Codex, Cursor, or Aider directly:
-boundary claude
-
-# When the agent finishes:
-boundary diff    # Review what the agent changed
-boundary undo    # Instantly restore files if the agent made a mistake
-boundary commit  # Commit to Git with verified provenance trailers
+boundary guard
 ```
 
----
-
-## 7. Key Guarantees
-
-- **External Intelligence**: Full-codebase AST mapping of providers, contracts, wrappers, and callsites.
-- **Continuous Maintenance**: AI-authored repairs with sandbox verification and automated Developer Trust PRs (verified repairs only; refusals are loud and empty-handed).
-- **Kernel Enforcement**: Built on native OS isolation (macOS Seatbelt / Linux Landlock).
-- **Credential Protection**: `~/.ssh`, `~/.aws`, `~/.config/gcloud`, git credentials, and keychains are denied by default.
-- **Instant Rollback**: Hash-based BLAKE3 file snapshots allow physical restoration of modified and deleted files in 2ms.
-- **Zero Infrastructure**: No Docker, no daemon, no cloud account required.
+If any staged file contains an unchecked external HTTP call, Boundary halts the commit and points directly to the exposed line.

@@ -1,99 +1,100 @@
-# Boundary Architecture: Maintenance Layer for Systems That Change
+# Boundary System Architecture
 
-> **Boundary keeps software working when the systems around it change.**
+> **Boundary keeps software working when the outside world changes.**
 
-The wedge is vendor SDK/API migrations. The architecture is a general contract-maintenance
-loop: any machine-readable interface a repository depends on is a `ChangeSource`, and every
-change flows through detect → decide → verify → learn.
+Boundary bridges the gap between dynamic external API traffic and rigid, typed codebase boundaries. It automates runtime contract synthesis, callsite patching, and hermetic sandbox verification.
 
 ---
 
-## 1. The loop
+## 1. System Pipeline
 
 ```text
-ANY CHANGESOURCE (Dependency release, vendor changelog, scheduled check, registry drift, PR event)
-│
-▼
-BOUNDARY CHANGE RADAR (detect_changes: read-only AST evidence scan)
-▼
-┌────────────────────────┴────────────────────────┐
-↓                                                 ↓
-CODEBASE CONTEXT                              CHANGE CONTEXT
-graph · callsites · wrappers · tests       ChangeSource · migration · changelog
-│                                                 │
-└────────────────────────┬────────────────────────┘
-                         ▼
-SEMANTIC KNOWLEDGE BASE (.boundary/knowledge/)
-Ground truth verified patterns fed to prompt to minimize token burn
-                         ▼
-SHARED AI REASONING ENGINE (Customer BYOK Provider)
-The sole author of reviews, assessments, and code repairs
-AI reasons; native tools provide evidence and execute/verify
-┌────────────────────────┴────────────────────────┐
-↓                                                 ↓
-CONSULT (Howl Persona)                            WORK (Hunt Persona)
-Find & explain maintenance problems               Find, repair, verify & deliver PR
-Deep AI impact analysis                           Surgical AI patch generation
-GitHub ISSUE filed                                Kernel sandbox + real test suite
-Zero files touched                                Evidence (BLAKE3) & Trust PR
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. Telemetry Capture Layer                                                  │
+│    - OpenTelemetry Collector / Next.js SDK / Fetch Shim                     │
+│    - Captures raw HttpExchange (method, path, status, response_body)        │
+│    - Persisted to .boundary/knowledge/exchanges.jsonl                       │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. Static AST Scanner (Rust & Python)                                       │
+│    - Scans AST across TS/JS, Python, Go for unvalidated external callsites  │
+│    - Identifies endpoints, methods, and unmarshaled variables               │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. Context & Payload Isolation                                              │
+│    - Extracts ONLY response_body from captured telemetry clusters           │
+│    - Drops telemetry metadata (request_method, request_headers)             │
+│    - Unwraps root objects to prevent double-array/slice hallucinations      │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. Polyglot Schema Synthesizer (BYOK AI Provider)                           │
+│    - TypeScript: Zod schema (import { z } from 'zod')                       │
+│    - Python: Pydantic BaseModel (import { BaseModel } from 'pydantic')      │
+│    - Go: Struct definitions with json struct tags                           │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. Polyglot AST Rewriter & Verifier                                         │
+│    - Injects Schema.parse(data) or model_validate() at callsites            │
+│    - No-Swallow Rule: Rejects patches with silent try/catch blocks          │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6. Hermetic Sandbox & Ghost Proxy Replay                                    │
+│    - macOS sandbox-exec / Linux Landlock drops outbound network             │
+│    - Rust Ghost Proxy (Axum on 127.0.0.1:54321) serves recorded exchanges   │
+│    - Replays canned status codes & response bodies to local test suite      │
+│    - Passes ONLY if new schemas successfully validate mock traffic          │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 1b. Product Modes: Consult vs Work (Personas: Howl & Hunt)
+---
 
-Boundary cleanly separates **Consult** and **Work** as its primary product abstractions:
-- **Consult (`@howl explain` / `boundary consult`)**: Finds and explains maintenance problems with deep AI reasoning. Explains what changed upstream, what is actually affected across internal callsites, why, what should change, and what must NOT change. Files an advisory **GitHub Issue** (or responds on an existing PR thread). Never touches files, never commits, and never opens PRs.
-- **Work (`boundary hunt <id>` / `boundary work`)**: The autonomous maintenance worker. Starts from a finding ID, rebuilds live context, reasons with AI, authors the patch with AI, verifies in an isolated sandbox worktree at the exact SHA with the project's real test command, and opens a **GitHub PR** only for sealed, green, scope-clean repairs. Anything else fails closed with no PR.
+## 2. Core Components
 
-## 1c. Hunt internals (ports + sealed provenance)
+### A. The Ghost Proxy (`src/ghost_proxy/`)
+Built with native Rust and Tokio/Axum:
+* Loads recorded `HttpExchange` structs into memory.
+* Operates on a dynamic or static loopback port (`127.0.0.1:54321`).
+* Matches incoming requests against method and target path (`x-boundary-original-url` or raw path).
+* Serves the isolated `response_body` bytes with recorded `response_headers`.
+* Returns `404 Unmocked Boundary` if an unmocked network request is attempted, guaranteeing that tests run strictly offline.
 
-Hunt's core loop (`boundary.hunt.run_hunt`) talks only to capability ports
-(`boundary.hunt_ports`): `ContextProvider / RepairReasoner / PatchAuthor /
-SandboxProvider / Verifier / RepairInterpreter / PRPublisher`. Deterministic
-code provides evidence and execution; it cannot author repairs.
+### B. Payload Isolation Engine (`python/boundary/hunt.py`)
+Prevents **Context Leakage**:
+* Telemetry logging wraps HTTP events in metadata envelopes.
+* If the full envelope is provided to the LLM, the model creates schemas for the logger rather than the API.
+* The isolation engine extracts only `exchange.response_body`, unwraps single-sample payloads, and prompts the AI with strict boundary validation directives.
 
-Two frozen, sealed types enforce the boundary: `AIAuthoredPatch`
-(constructible only via `seal_ai_patch`, carrying `author="ai"`, model
-identity, diff, and admission provenance) and `VerifiedRepair` (mintable
-only via `seal_verified_repair`, which derives acceptance from sealed
-patches, real command + exit 0, convinced interpretation, and its own
-scope evaluation). Promotion re-checks seal + sandbox containment;
-`decide_pr` accepts only the token. One Hunt holds a repo-level lock
-(`.boundary/hunt.lock`) at a time.
+### C. The Polyglot AST Rewriter (`src/engines/rewriter.rs`)
+Directly manipulates source code ASTs:
+* Injects schema imports at the file header.
+* Rewrites raw `.then(r => r.json())` into `.then(r => r.json()).then(data => Schema.parse(data))`.
+* Rewrites `const data = await res.json()` into `const data = Schema.parse(await res.json())`.
+* Validates that the patch contains no error-suppressing `catch { return null; }` blocks.
 
-## 2. Core types
+### D. Multi-Ecosystem Test Runner (`python/boundary/test_runner.py`)
+Auto-detects test runners across polyglot projects:
+* **Go**: `go build .`, `go vet .`, `go test ./...`
+* **Python**: `pytest`, `python -m unittest`, `python -m py_compile`
+* **Node.js**: `npm test`, `node --check`
 
-| Type | Module | Role |
-|---|---|---|
-| `ChangeSource` | `boundary.change_source` | Names the depended-upon system: `kind` (`sdk`, `external_api`, `openapi`, `graphql`, `protobuf`, `webhook`, `mcp_server`, `internal_service`), `identity`, versions or `contract_hash` |
-| `Detection` | `boundary.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning) |
-| `Decision` | `boundary.intelligence` | Internal routing: `AI / QUARANTINE` + `confidence`. AI is the exclusive patch author. Never a CLI flag |
-| `AIAuthoredPatch` / `VerifiedRepair` | `boundary.hunt_ports` | Sealed capability types: AI-only patch admission and verified-only PR publication |
-| `KBEntry` | `boundary.knowledge` | Repository memory at `.boundary/knowledge/{kind}/{identity}/{contract}.json` (legacy provider paths still read). Executable patterns + test recipes + evidence + quarantined `failed_patterns` |
+---
 
-## 3. State on disk (per repository)
+## 3. Directory Layout on Disk
 
 ```text
 .boundary/
-  graph.json            Full dependency graph (Rust AST engine)
-  index_state.json      commit SHA + file mtimes + discovery counts (incremental re-index)
-  knowledge/            Verified repair patterns + test recipes (the flywheel)
-  history.json          Auditable migration ledger
-  snapshots/            Pre-execution BLAKE3 snapshots for rollback
+  knowledge/
+    exchanges.jsonl       Captured runtime HTTP telemetry spans
+  contracts/              Synthesized schemas
+  graph.json              Static dependency callsite map
 ```
-
-Per installation (host side, `~/.boundary/installations/{id}.json`, 0600):
-repositories with `PENDING → INDEXED → READY`, provider association, index timestamps.
-
-## 4. Trust rules (non-negotiable)
-
-- No real test suite = never merge-ready.
-- Tests are reported PASSED only with a real command, real exit 0. Refusals print NOT RUN.
-- No `exit 0` fallbacks, no default-pass counters, no fake badges.
-- Unverified AI guesses never enter trusted knowledge.
-- Webhook serving without a secret is a hard error.
-- Secrets are scrubbed before provider submission and audit persistence (`boundary.redact`); credential files are 0600.
-- Boundary never cries wolf: no alert, badge, or pass is ever issued without the execution behind it.
-
-## 5. Deliberately not built yet
-
-Connectors for OpenAPI/GraphQL/protobuf/MCP/internal-service kinds (types exist, resolution returns `None` → quarantine/AI), multi-repository fan-out orchestration, hosted background monitoring daemon, web dashboard beyond `boundary doctor`. Seams are defined; products wait for users.

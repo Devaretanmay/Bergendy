@@ -10,15 +10,20 @@ All notable changes to Boundary are documented here.
   - Context & Payload Isolation: strictly extracts and models `response_body` telemetry, preventing wrapper hallucination.
   - "No-Swallow" AST Verification: rejects patches that wrap validation checks in silent error-suppressing blocks.
   - Polyglot AST Rewriter (`src/engines/rewriter.rs`): injects `.parse(data)` and `Schema.parse(await res.json())` directly at client callsites.
-- **Hermetic Sandbox Replay (Ghost Proxy)**:
-  - Rust axum-based mock proxy (`src/ghost_proxy/`) running on localhost:54321 for offline, deterministic replaying of captured network telemetry.
+- **BYOK AI Credentials**:
+  - `boundary auth`: provider authentication (Groq, OpenAI, Anthropic); credentials in `~/.boundary/credentials.json` (0600).
 - **Enterprise Command Suite**:
-  - `boundary scan`: locates unvalidated external network callsites across polyglot repositories.
-  - `boundary guard` & `boundary verify`: pre-commit and CI verification gates.
-  - `boundary auth`: BYOK provider authentication (Groq, OpenAI, Anthropic).
+  - `boundary scan`: alias of `boundary check`; locates external API drift and unvalidated boundaries.
+  - `boundary score`: 0-100 repo health score (SDK drift + unvalidated runtime calls).
+  - `boundary scout`: read-only audit — maps boundaries, warns, touches nothing.
+  - `boundary shield`: pre-commit enforcement + schema generation (`--on/--off/--fix/--status`).
+  - `boundary dev`: run your app with live traffic capture into `.boundary/contracts.db`.
+- **Hermetic Sandbox Replay (Ghost Proxy)**:
+  - Rust mock proxy infrastructure for offline, deterministic replaying of captured network telemetry during sandboxed verification (reachable at `127.0.0.1:54321`).
+- **MCP Server**:
+  - `boundary mcp`: Model Context Protocol server for AI assistants.
 
 ### Changed
-- Pruned dead legacy compression engines, framework hook adapters, and unneeded dependencies.
 - Standardized CLI output format.
 
 ## [1.1.0] - 2026-09-01

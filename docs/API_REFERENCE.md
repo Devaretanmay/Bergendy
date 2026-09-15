@@ -8,11 +8,11 @@
 ## 1. Documentation Index
 
 - **[Quickstart Guide](QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python workflows.
-- **[CLI Reference Guide](CLI.md)**: Complete guide to the frozen public CLI contract (`init`, `status`, `inspect`, `claude`, `opencode`, `codex`, `cursor`, `aider`, `exec`, `-w`, `step`, `--run`, `diff`, `apply`, `commit`, `undo`, `restore`).
+- **[CLI Reference Guide](CLI.md)**: Complete guide to the public CLI commands (`scan`, `resolve`, `guard`, `verify`, `auth`, `doctor`).
 - **[Agent Execution & TUI Supervision](AGENT_EXECUTION.md)**: Details on PTY terminal supervision, interactive coding agents, and kernel isolation.
-- **[Zero-Trust Credential Proxy](CREDENTIAL_PROXY.md)**: Safe API key injection and request routing without exposing raw secrets.
+- **[Ghost Proxy & Sandbox Replay](GHOST_PROXY.md)**: Rust mock server for deterministic replay of captured HTTP exchanges in hermetic sandboxes.
 - **[BLAKE3 Snapshots & Rollback](SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and physical restoration with `boundary undo`.
-- **[Output Compression & Token Crushing](COMPRESSION.md)**: High-speed Rust token reduction engines (`SmartCrusher`, `LogCompressor`, `DiffCompressor`).
+- **[Evidence Capture & Context Bounding](COMPRESSION.md)**: High-signal test failure extraction and token budget bounding.
 - **[TypeScript & Node.js SDK](TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
 - **[Use Cases & Working Examples](USE_CASES.md)**: Practical security scenarios, prompt injection defense, and REPL sandboxing patterns.
 
