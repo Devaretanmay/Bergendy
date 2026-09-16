@@ -1,8 +1,5 @@
-use flate2::write::ZlibEncoder;
-use flate2::Compression;
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::io::Write;
 
 pub fn compute_optimal_k(items: &[&str], bias: f64, min_k: usize, max_k: Option<usize>) -> usize {
     let n = items.len();
@@ -179,19 +176,8 @@ pub fn validate_with_zlib(items: &[&str], k: usize, max_k: usize, tolerance: f64
         return k;
     }
 
-    let full_compressed = zlib_compressed_len(full_text.as_bytes());
-    let subset_compressed = zlib_compressed_len(subset_text.as_bytes());
-
-    let full_ratio = if !full_text.is_empty() {
-        full_compressed as f64 / full_text.len() as f64
-    } else {
-        1.0
-    };
-    let subset_ratio = if !subset_text.is_empty() {
-        subset_compressed as f64 / subset_text.len() as f64
-    } else {
-        1.0
-    };
+    let full_ratio = estimated_compression_ratio(full_text.as_bytes());
+    let subset_ratio = estimated_compression_ratio(subset_text.as_bytes());
 
     let ratio_diff = (full_ratio - subset_ratio).abs();
 
@@ -203,11 +189,36 @@ pub fn validate_with_zlib(items: &[&str], k: usize, max_k: usize, tolerance: f64
     k
 }
 
-fn zlib_compressed_len(bytes: &[u8]) -> usize {
-    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
-    encoder.write_all(bytes).expect("in-memory write");
-    let compressed = encoder.finish().expect("flush");
-    compressed.len()
+fn estimated_compression_ratio(bytes: &[u8]) -> f64 {
+    if bytes.is_empty() {
+        return 1.0;
+    }
+    // Fast in-memory LZ77 byte estimator without external flate2 crate.
+    // 10 bytes represents header/footer overhead matching standard gzip/zlib envelopes.
+    let mut compressed_size = 10usize;
+    let mut i = 0;
+    let len = bytes.len();
+    while i < len {
+        let mut match_len = 0;
+        let window_start = if i >= 4096 { i - 4096 } else { 0 };
+        for j in window_start..i {
+            let mut l = 0;
+            while i + l < len && bytes[j + l] == bytes[i + l] && l < 256 {
+                l += 1;
+            }
+            if l > match_len {
+                match_len = l;
+            }
+        }
+        if match_len >= 3 {
+            compressed_size += 2; // (offset, length) token
+            i += match_len;
+        } else {
+            compressed_size += 1; // literal byte
+            i += 1;
+        }
+    }
+    compressed_size as f64 / len as f64
 }
 
 #[cfg(test)]

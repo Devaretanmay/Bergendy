@@ -1,8 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
-use aho_corasick::{AhoCorasick, AhoCorasickBuilder, MatchKind};
-
 use regex::Regex;
 
 use crate::engines::compression::adaptive_sizer::compute_optimal_k;
@@ -169,7 +167,7 @@ pub struct LogCompressorStats {
 }
 
 struct FormatDetector {
-    matchers: Vec<(LogFormat, AhoCorasick)>,
+    matchers: Vec<(LogFormat, &'static [&'static str])>,
 }
 
 impl FormatDetector {
@@ -212,14 +210,7 @@ impl FormatDetector {
 
         let matchers = table
             .iter()
-            .map(|(fmt, patterns)| {
-                let ac = AhoCorasickBuilder::new()
-                    .ascii_case_insensitive(false)
-                    .match_kind(MatchKind::LeftmostFirst)
-                    .build(*patterns)
-                    .expect("format-detector automaton must build (static input)");
-                (*fmt, ac)
-            })
+            .map(|(fmt, patterns)| (*fmt, *patterns))
             .collect();
         Self { matchers }
     }
@@ -235,10 +226,10 @@ impl FormatDetector {
             s
         };
         let mut best: Option<(LogFormat, usize)> = None;
-        for (fmt, ac) in &self.matchers {
+        for (fmt, patterns) in &self.matchers {
             let mut score = 0;
             for line in &sample {
-                if ac.is_match(*line) {
+                if patterns.iter().any(|p| line.contains(p)) {
                     score += 1;
                 }
             }
@@ -251,13 +242,12 @@ impl FormatDetector {
 }
 
 struct LevelClassifier {
-    automaton: AhoCorasick,
-    levels: Vec<LogLevel>,
+    entries: Vec<(&'static str, LogLevel)>,
 }
 
 impl LevelClassifier {
     fn new() -> Self {
-        let entries: &[(LogLevel, &[&str])] = &[
+        let raw: &[(LogLevel, &[&str])] = &[
             (
                 LogLevel::Error,
                 &[
@@ -276,27 +266,29 @@ impl LevelClassifier {
             (LogLevel::Debug, &["DEBUG", "debug", "Debug"]),
             (LogLevel::Trace, &["TRACE", "trace", "Trace"]),
         ];
-        let mut patterns = Vec::new();
-        let mut levels = Vec::new();
-        for (level, words) in entries {
+        let mut entries = Vec::new();
+        for (level, words) in raw {
             for w in *words {
-                patterns.push(*w);
-                levels.push(*level);
+                entries.push((*w, *level));
             }
         }
-        let automaton = AhoCorasickBuilder::new()
-            .ascii_case_insensitive(false)
-            .match_kind(MatchKind::LeftmostLongest)
-            .build(&patterns)
-            .expect("level-classifier automaton must build (static input)");
-        Self { automaton, levels }
+        Self { entries }
     }
 
     fn classify(&self, line: &str) -> LogLevel {
         let bytes = line.as_bytes();
-        for m in self.automaton.find_iter(line) {
-            if is_word_boundary(bytes, m.start(), m.end()) {
-                return self.levels[m.pattern().as_usize()];
+        for (word, level) in &self.entries {
+            let mut start = 0;
+            while let Some(pos) = line[start..].find(word) {
+                let actual_start = start + pos;
+                let actual_end = actual_start + word.len();
+                if is_word_boundary(bytes, actual_start, actual_end) {
+                    return *level;
+                }
+                start = actual_start + 1;
+                if start >= line.len() {
+                    break;
+                }
             }
         }
         LogLevel::Unknown

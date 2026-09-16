@@ -118,8 +118,8 @@ Boundary combines a native Rust engine for AST transformations and kernel sandbo
 - **`src/engines/rewriter.rs`**: AST-driven callsite rewriter injecting schema imports and validation calls.
 - **`src/engines/graph/`**: Dependency graph mapping external providers, manifests, and AST callsites.
 - **`src/sandbox/`**: OS-level network and filesystem isolation (macOS Seatbelt, Linux Landlock).
+- **`src/ghost_proxy/server.rs`**: Local Axum-based mock HTTP server serving recorded exchanges in hermetic sandboxes.
 - **`python/boundary/hunt.py`**: Schema synthesis loop with payload isolation and No-Swallow AST verifier.
-- **`python/boundary/sandbox/proxy.py`**: Interception proxy routing mock payloads during test execution.
 - **`sdk/typescript/instrument.js`**: Node.js and fetch shim redirecting sandboxed traffic to the mock proxy.
 
 ---

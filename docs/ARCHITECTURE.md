@@ -71,7 +71,7 @@ Performs code rewrites at the AST level:
 * Rewrites `const data = await res.json()` into `const data = Schema.parse(await res.json())`.
 * Rejects patches containing silent error suppressors (`catch { return null; }` or `except: pass`).
 
-### D. Hermetic Sandbox and Interception Proxy (`src/sandbox/`, `python/boundary/sandbox/proxy.py`, `sdk/typescript/instrument.js`)
+### D. Hermetic Sandbox and Interception Proxy (`src/sandbox/`, `src/ghost_proxy/`, `sdk/typescript/instrument.js`)
 Guarantees zero external network dependencies during verification:
 * **Kernel Sandbox**: macOS Seatbelt (`sandbox-exec`) or Linux Landlock blocks public internet sockets.
 * **Mock Interception Proxy**: Serves canned `HttpExchange` responses on loopback (`127.0.0.1:54321`).
