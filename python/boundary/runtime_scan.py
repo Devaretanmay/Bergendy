@@ -106,7 +106,7 @@ def boundary_score(report: dict[str, Any]) -> dict[str, Any]:
     score = max(0, 100 - report.get("unvalidated", 0) * 15 - any_count * 5)
     grade = ("A — shielded" if score >= 90 else
              "B — mostly guarded" if score >= 70 else
-             "C — exposed" if score >= 40 else "D — vibe-coded")
+             "C — exposed" if score >= 40 else "D — unprotected")
     return {"score": score, "grade": grade, "unvalidated": report.get("unvalidated", 0),
             "any_casts": any_count, "files_scanned": report.get("files_scanned", 0)}
 

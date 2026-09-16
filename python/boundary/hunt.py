@@ -1959,7 +1959,7 @@ def generate_schema_for_traffic(client, endpoint: str, clustered_samples: list[d
         payloads_to_send = response_payloads if response_payloads else clustered_samples
 
     system_prompt = (
-        "You are an expert engineer creating bulletproof runtime boundary validation schemas.\n"
+        "You are an expert engineer creating type-safe runtime boundary validation schemas.\n"
         "Rules:\n"
         "1. You are validating ONLY the HTTP response body payload returned by the endpoint.\n"
         "2. Do NOT create schemas for telemetry wrappers or HTTP metadata (request_method, request_headers, etc.).\n"

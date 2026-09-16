@@ -116,7 +116,7 @@ def render_dashboard() -> str:
             f"<tr><td>{_repo_link(c['repository'])} / {_esc(c['branch'])}</td>"
             f"<td>{_badge(c['status'])}</td>"
             f"<td>{_commit_link(c['repository'], c['full_head'], c['head'])}"
-            f"{' ✓' if c['exact'] else ' ~'}</td>"
+            f"{' [exact]' if c['exact'] else ' ~'}</td>"
             f"<td>{c['pushes']}</td>"
             f"<td class=dim>{_esc(c['updated_ago'])}</td>"
             f"<td>{issues}</td></tr>")
@@ -143,7 +143,7 @@ padding:.6em 1em;min-width:140px}}.card b{{font-size:1.4em;display:block}}</styl
 </head><body>
 <h1>Boundary: cross-repo work impact</h1>
 <p class=dim>Pushes are observations. Only CONFIRMED impact notifies.
-✓ = exact pushed SHA inspected, ~ = fallback. Auto-refreshes every 20s.</p>
+[exact] = exact pushed SHA inspected, ~ = fallback. Auto-refreshes every 20s.</p>
 <div class=kpi>
 <div class=card><b>{len(rows)}</b>candidates tracked</div>
 <div class=card><b>{data['needs_attention']}</b>need attention</div>
