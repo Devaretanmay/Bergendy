@@ -16,7 +16,7 @@ boundary scan
 boundary resolve --target src/api_client.ts
 
 # 3. Block unvalidated commits and verify repairs
-boundary guard
+boundary gate
 boundary verify
 ```
 
@@ -87,16 +87,16 @@ Runs your existing test suite inside an isolated sandbox using macOS `sandbox-ex
 boundary verify
 ```
 
-### 4. Pre-Commit Verification (`boundary guard`)
+### 4. Pre-Commit Verification (`boundary gate`)
 
 Runs as a pre-commit hook to prevent unvalidated network calls from entering source control:
 
 ```bash
 # Install hook
-boundary guard --install
+boundary gate --install
 
 # Execute manual check against staged files
-boundary guard
+boundary gate
 ```
 
 ---

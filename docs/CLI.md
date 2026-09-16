@@ -103,18 +103,18 @@ Behavior:
 
 ---
 
-### `boundary guard`
+### `boundary gate` (alias: `boundary guard`)
 Pre-commit hook and CI gate that validates staged files:
 
 ```bash
 # Install hook to .git/hooks/pre-commit
-boundary guard --install
+boundary gate --install
 
 # Run check on currently staged files
-boundary guard
+boundary gate
 
 # Run check on specific files (used by pre-commit framework or CI)
-boundary guard --files src/api.ts src/client.py --ci
+boundary gate --files src/api.ts src/client.py --ci
 ```
 
 #### Pre-commit Framework Configuration (`.pre-commit-config.yaml`)
@@ -123,25 +123,25 @@ repos:
   - repo: https://github.com/Devaretanmay/Boundary
     rev: v1.1.3
     hooks:
-      - id: boundary-guard
+      - id: boundary-gate
 ```
 
 #### GitHub Actions Workflow Example (`.github/workflows/boundary.yml`)
 ```yaml
-name: boundary-guard
+name: boundary-gate
 on:
   pull_request:
   push:
     branches: [main]
 
 jobs:
-  guard:
+  gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: Devaretanmay/Boundary@main
         with:
-          command: guard
+          command: gate
 ```
 
 - Blocks commits and PRs that introduce unvalidated external HTTP callsites across TypeScript, Python, and Go.

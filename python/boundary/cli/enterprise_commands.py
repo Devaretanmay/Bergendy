@@ -234,13 +234,13 @@ def cmd_guard(args: Any) -> None:
         hook_path = os.path.join(hooks_dir, "pre-commit")
         hook_content = (
             "#!/bin/sh\n"
-            "# Boundary Pre-commit Guard\n"
-            "boundary guard || exit 1\n"
+            "# Boundary Pre-commit Gate\n"
+            "boundary gate || exit 1\n"
         )
         with open(hook_path, "w", encoding="utf-8") as f:
             f.write(hook_content)
         os.chmod(hook_path, 0o755)
-        print(f"{green('[OK]')} Pre-commit guard installed at {dim('.git/hooks/pre-commit')}")
+        print(f"{green('[OK]')} Pre-commit gate installed at {dim('.git/hooks/pre-commit')}")
         return
 
     staged_files = []
@@ -331,7 +331,7 @@ def cmd_guard(args: Any) -> None:
         sys.exit(1)
     else:
         if getattr(args, "verbose", False) or getattr(args, "ci", False):
-            print(f"{green('boundary guard:')} Staged changes verified. Zero unprotected network boundaries.")
+            print(f"{green('boundary gate:')} Staged changes verified. Zero unprotected network boundaries.")
         sys.exit(0)
 def cmd_verify(args: Any) -> None:
     """Execute isolated sandbox verification replaying captured telemetry."""

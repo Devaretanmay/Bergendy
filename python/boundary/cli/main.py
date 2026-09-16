@@ -2666,13 +2666,17 @@ def main():
     p_resolve.add_argument("path", nargs="?", default=".", help="Target repository directory")
     p_resolve.add_argument("--target", default="", help="Specific file to resolve")
 
-    p_guard = subparsers.add_parser("guard", help="Pre-commit and CI guard blocking unvalidated network boundaries")
-    p_guard.add_argument("path", nargs="?", default=".", help="Target repository directory")
-    p_guard.add_argument("--install", action="store_true", help="Install pre-commit hook")
-    p_guard.add_argument("--files", nargs="*", default=None, help="Specific files to guard (defaults to git staged)")
-    p_guard.add_argument("--ci", action="store_true", help="Run in CI mode with exit 0/1")
-    p_guard.add_argument("--strict", action="store_true", help="Strict enforcement mode")
-    p_guard.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    p_gate = subparsers.add_parser(
+        "gate",
+        aliases=["guard"],
+        help="Pre-commit and CI gate blocking unvalidated network boundaries",
+    )
+    p_gate.add_argument("path", nargs="?", default=".", help="Target repository directory")
+    p_gate.add_argument("--install", action="store_true", help="Install pre-commit hook")
+    p_gate.add_argument("--files", nargs="*", default=None, help="Specific files to gate (defaults to git staged)")
+    p_gate.add_argument("--ci", action="store_true", help="Run in CI mode with exit 0/1")
+    p_gate.add_argument("--strict", action="store_true", help="Strict enforcement mode")
+    p_gate.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     p_verify = subparsers.add_parser("verify", help="Execute isolated sandbox verification replaying captured telemetry")
     p_verify.add_argument("path", nargs="?", default=".", help="Target repository directory")
@@ -2979,6 +2983,7 @@ def main():
         "auth": cmd_auth,
         "status": cmd_status,
         "resolve": cmd_resolve,
+        "gate": cmd_guard,
         "guard": cmd_guard,
         "verify": cmd_verify,
         "doctor": cmd_doctor,

@@ -8,7 +8,7 @@
 ## 1. Documentation Index
 
 - **[Quickstart Guide](QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python workflows.
-- **[CLI Reference Guide](CLI.md)**: Complete guide to the public CLI commands (`scan`, `resolve`, `guard`, `verify`, `auth`, `doctor`).
+- **[CLI Reference Guide](CLI.md)**: Complete guide to the public CLI commands (`scan`, `resolve`, `gate`, `verify`, `auth`, `doctor`).
 - **[Mock Proxy & Sandbox Replay](GHOST_PROXY.md)**: Local interception proxy for deterministic replay of captured HTTP exchanges in hermetic sandboxes.
 - **[Evidence Capture & Context Bounding](COMPRESSION.md)**: High-signal test failure extraction and token budget bounding.
 - **[TypeScript & Node.js SDK](TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.

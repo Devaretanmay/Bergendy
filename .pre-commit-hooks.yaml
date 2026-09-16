@@ -1,7 +1,15 @@
+- id: boundary-gate
+  name: boundary gate
+  description: Block commits introducing unvalidated external network boundaries
+  entry: boundary gate
+  language: python
+  types_or: [javascript, jsx, ts, tsx, python, go]
+  pass_filenames: true
+
 - id: boundary-guard
   name: boundary guard
   description: Block commits introducing unvalidated external network boundaries
-  entry: boundary guard
+  entry: boundary gate
   language: python
   types_or: [javascript, jsx, ts, tsx, python, go]
   pass_filenames: true

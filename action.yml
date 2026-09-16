@@ -3,7 +3,7 @@ description: 'Scan for unprotected network boundaries and enforce runtime schema
 author: 'Boundary Team'
 inputs:
   command:
-    description: 'The boundary command to run (scan, guard, verify)'
+    description: 'The boundary command to run (scan, gate, verify)'
     required: false
     default: 'scan'
   fail-on-unprotected:
@@ -39,8 +39,8 @@ runs:
         CMD="${{ inputs.command }}"
         if [ "$CMD" = "scan" ]; then
           boundary scan "${{ inputs.path }}" --min-score="${{ inputs.min-score }}" $( [ "${{ inputs.fail-on-unprotected }}" = "true" ] && echo "--fail-on-unprotected" )
-        elif [ "$CMD" = "guard" ]; then
-          boundary guard "${{ inputs.path }}" --ci --strict
+        elif [ "$CMD" = "gate" ] || [ "$CMD" = "guard" ]; then
+          boundary gate "${{ inputs.path }}" --ci --strict
         elif [ "$CMD" = "verify" ]; then
           boundary verify "${{ inputs.path }}" --contract-only
         else

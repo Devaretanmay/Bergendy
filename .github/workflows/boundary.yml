@@ -1,10 +1,10 @@
-name: boundary-shield
+name: boundary-gate
 on:
   pull_request:
   push:
     branches: [main]
 jobs:
-  shield:
+  gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,5 +13,6 @@ jobs:
           python-version: "3.12"
       - name: Install boundary
         run: pip install -e . 2>/dev/null || pip install .
-      - name: Shield gate (fail-closed on unvalidated boundaries)
-        run: boundary shield-check .
+      - name: Contract Gate (fail-closed on unvalidated boundaries)
+        run: boundary gate . --ci
+

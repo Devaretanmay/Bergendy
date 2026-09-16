@@ -124,15 +124,15 @@ Resolution Complete
 
 ---
 
-### Step 4: Pre-Commit Guard
+### Step 4: Pre-Commit Gate
 Add Boundary to your pre-commit workflow:
 
 ```bash
 # Install git hook
-boundary guard --install
+boundary gate --install
 
 # Test manually
-boundary guard
+boundary gate
 ```
 
 If any staged file contains an unchecked external HTTP call, Boundary halts the commit and points directly to the exposed line.
