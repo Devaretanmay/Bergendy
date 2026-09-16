@@ -4,11 +4,14 @@
 
 import json
 import os
+from unittest.mock import MagicMock
 
+from boundary.ai_planner import AIPatchPlanner
 from boundary.knowledge import (
     direct_rewrites_for, ensure_test_recipe, lookup,
     record_failure, upsert_learned,
 )
+from boundary.llm import LLMResponse
 from boundary.maintenance import run_maintenance_cycle
 
 
@@ -47,7 +50,23 @@ def test_record_failure_never_creates_trusted_patterns(tmp_path):
     assert len(direct_rewrites_for(str(tmp_path), "stripe", "1", "2")) == 1
 
 
-def test_failed_verification_records_avoidance_note(tmp_path):
+def test_failed_verification_records_avoidance_note(tmp_path, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test123")
+    mock_client = MagicMock()
+    mock_client.complete.return_value = LLMResponse(
+        content=(
+            "<<<<<<< SEARCH\n"
+            "stripe.subscriptions.del('s');\n"
+            "=======\n"
+            "stripe.subscriptions.cancel('s');\n"
+            ">>>>>>> REPLACE"
+        ),
+        model="groq/llama-3.3-70b-versatile",
+    )
+    monkeypatch.setattr(
+        "boundary.maintenance.AIPatchPlanner.from_env",
+        classmethod(lambda cls, **k: AIPatchPlanner(client=mock_client)),
+    )
     repo = tmp_path / "r"
     (repo / "src").mkdir(parents=True)
     (repo / "package.json").write_text(json.dumps({
