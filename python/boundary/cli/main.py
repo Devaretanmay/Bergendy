@@ -1,4 +1,4 @@
-from boundary.cli.enterprise_commands import cmd_resolve, cmd_guard, cmd_verify
+from boundary.cli.enterprise_commands import cmd_resolve, cmd_guard, cmd_verify, run_guided_fix
 import argparse
 import dataclasses
 import graphlib
@@ -2135,10 +2135,14 @@ def cmd_dev(args):
 
 
 def cmd_fix(args):
-    """Run autonomous repair: finding-based Hunt when given an <id>, else provider flow."""
+    """Run autonomous repair: finding-based Hunt when given an <id>, provider maintenance when requested, or guided end-to-end fix."""
     if _hunt_finding_requested(args):
         return cmd_hunt(args)
-    return cmd_maintain(args)
+    if getattr(args, "detect", False) or getattr(args, "provider", None) not in (None, "auto"):
+        return cmd_maintain(args)
+    workdir = getattr(args, "root_dir", ".") or "."
+    return run_guided_fix(workdir, assume_yes=bool(getattr(args, "yes", False)))
+
 
 
 def _hunt_finding_requested(args) -> bool:
