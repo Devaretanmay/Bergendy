@@ -1,8 +1,6 @@
 # Boundary Quickstart Guide
 
-Get up and running with Boundary runtime boundary defense in under 2 minutes.
-
-> **“APIs drift. Upstream payloads change. Boundary detects unguarded boundaries, synthesizes rigid schemas, and verifies them in hermetic sandboxes.”**
+Get up and running with Boundary runtime boundary defense in under two minutes.
 
 ---
 
@@ -14,7 +12,7 @@ Install Boundary from PyPI:
 pip install boundary
 ```
 
-Or build from source with the native Rust engine:
+Or build from source:
 
 ```bash
 git clone https://github.com/Devaretanmay/Boundary.git
@@ -26,30 +24,30 @@ maturin develop --release
 
 ## 2. Authentication (BYOK)
 
-Configure your AI provider API key (Groq, OpenAI, or Anthropic):
+Configure your preferred AI provider (Groq, OpenAI, or Anthropic):
 
 ```bash
-# Interactive setup:
+# Interactive setup
 boundary auth
 
-# Or export via environment variable:
+# Or set via environment variables:
 export GROQ_API_KEY="your-api-key"
 # or
 export OPENAI_API_KEY="your-api-key"
 ```
 
-Verify your environment readiness:
+Verify your environment:
 
 ```bash
 boundary doctor
 ```
 
-Outputs:
+Example output:
 ```text
 System Readiness Check
   [OK] Sandbox environment: macOS sandbox-exec supported
   [OK] AI provider: Groq (openai/gpt-oss-120b)
-  [OK] Ghost Proxy: Ready (127.0.0.1:54321)
+  [OK] Mock Proxy: Ready (127.0.0.1:54321)
   [OK] Compilers detected: python3, node, go
 ```
 
@@ -58,7 +56,7 @@ System Readiness Check
 ## 3. Step-by-Step Workflow
 
 ### Step 1: Scan for Unvalidated Boundaries
-Scan your repository for external HTTP callsites that lack runtime schema validation or use unsafe casts:
+Scan your repository for external HTTP callsites lacking runtime schema validation:
 
 ```bash
 boundary scan
@@ -80,30 +78,30 @@ Scan Summary:
 ---
 
 ### Step 2: Resolve Unvalidated Boundaries
-Synthesize rigid schemas from captured runtime traffic and patch the callsites:
+Synthesize rigid schemas from captured runtime traffic and patch callsites:
 
 ```bash
 # Resolve all detected boundaries:
 boundary resolve
 
-# Or resolve a specific file:
+# Or target a specific file:
 boundary resolve --target src/resend.ts
 ```
 
 What Boundary does:
-1. **Extracts traffic telemetry**: Loads captured HTTP spans.
-2. **Isolates payload context**: Extracts only `response_body` (ensuring zero wrapper fields like `request_method` or `request_headers` pollute the schema).
+1. **Extracts traffic telemetry**: Reads captured HTTP spans from `.boundary/knowledge/exchanges.jsonl`.
+2. **Isolates payload context**: Extracts solely `response_body`, stripping transport wrappers (`request_method`, `request_headers`).
 3. **Synthesizes typed schema**:
    - TypeScript: Strict **Zod** schema (`z.object({...})`).
    - Python: Strict **Pydantic** model (`class Schema(BaseModel):`).
    - Go: Typed **Go struct** with json tags.
-4. **Patches callsite**: Rewrites code to call `.parse()`, `model_validate()`, or typed unmarshaling, verified with the **No-Swallow AST Rule** (no silent error suppression).
-5. **Replays against Ghost Proxy**: Validates the newly patched code in an isolated sandbox.
+4. **Patches callsite**: Injects validation (`.parse()`, `model_validate()`) verified with the **No-Swallow Rule** (rejects silent `try/catch` or `except: pass` error suppressors).
+5. **Replays against Mock Proxy**: Verifies the patched code inside an isolated sandbox.
 
 ---
 
 ### Step 3: Verify in Hermetic Sandbox
-Run verification tests inside a network-blocked sandbox where external calls are replayed locally by the Rust Ghost Proxy:
+Run verification tests inside a network-blocked sandbox where external calls are replayed locally:
 
 ```bash
 boundary verify
@@ -112,7 +110,7 @@ boundary verify
 Output:
 ```text
 Verification Environment (Sandbox)
-  ├─ Network:   Isolated (Ghost Proxy active on 127.0.0.1:54321)
+  ├─ Network:   Isolated (Mock Proxy active on 127.0.0.1:54321)
   ├─ Replaying: 3 captured HTTP exchanges
   └─ Executing: `npm test`
 
@@ -127,9 +125,13 @@ Resolution Complete
 ---
 
 ### Step 4: Pre-Commit Guard
-Add Boundary to your pre-commit workflow to prevent unvalidated API calls from ever reaching production:
+Add Boundary to your pre-commit workflow:
 
 ```bash
+# Install git hook
+boundary guard --install
+
+# Test manually
 boundary guard
 ```
 

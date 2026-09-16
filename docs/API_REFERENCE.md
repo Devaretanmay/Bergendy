@@ -9,9 +9,7 @@
 
 - **[Quickstart Guide](QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python workflows.
 - **[CLI Reference Guide](CLI.md)**: Complete guide to the public CLI commands (`scan`, `resolve`, `guard`, `verify`, `auth`, `doctor`).
-- **[Agent Execution & TUI Supervision](AGENT_EXECUTION.md)**: Details on PTY terminal supervision, interactive coding agents, and kernel isolation.
-- **[Ghost Proxy & Sandbox Replay](GHOST_PROXY.md)**: Rust mock server for deterministic replay of captured HTTP exchanges in hermetic sandboxes.
-- **[BLAKE3 Snapshots & Rollback](SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and physical restoration with `boundary undo`.
+- **[Mock Proxy & Sandbox Replay](GHOST_PROXY.md)**: Local interception proxy for deterministic replay of captured HTTP exchanges in hermetic sandboxes.
 - **[Evidence Capture & Context Bounding](COMPRESSION.md)**: High-signal test failure extraction and token budget bounding.
 - **[TypeScript & Node.js SDK](TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
 - **[Use Cases & Working Examples](USE_CASES.md)**: Practical security scenarios, prompt injection defense, and REPL sandboxing patterns.

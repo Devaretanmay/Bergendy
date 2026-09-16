@@ -6,7 +6,7 @@ When executing test suites, build runs, or compiler verifications, output can sp
 
 ## 1. High-Signal Log Capture
 
-Boundary's test harness captures execution output and isolates the deciding lines:
+Boundary captures execution output and isolates the deciding lines:
 * **Stack Trace Extraction**: Isolates tracebacks, syntax errors, and failing assertion lines from long build logs.
 * **Deterministic Bounding**: Raw captures are capped at high-signal limits (e.g. 8KB) to fit cleanly within LLM context windows without loss of semantic errors.
 * **Exit Code Integrity**: Exit codes (`0` for pass, non-zero for fail) are strictly preserved and never synthesized or assumed.

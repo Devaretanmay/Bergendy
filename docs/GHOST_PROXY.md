@@ -1,51 +1,52 @@
-# Ghost Proxy: Hermetic Mock Server & Sandbox Replay
+# Mock Interception Proxy and Hermetic Sandbox Replay
 
-The **Ghost Proxy** (`src/ghost_proxy/`) is Boundary's native Rust HTTP mock server built on Axum and Tokio. It enables deterministic, offline verification of runtime schemas during sandboxed test runs.
-
----
-
-## 1. Why Ghost Proxy?
-
-When Boundary generates a new runtime validation schema (such as a Zod schema or Pydantic model) and patches your source code, it must prove that the code actually compiles and parses the real API payloads without crashing.
-
-Running live tests against real external APIs (e.g. Stripe, OpenAI, Resend) during CI or automated repair is problematic:
-1. Real API keys might not be available or could incur financial cost.
-2. External services may rate-limit or fail unpredictably.
-3. Tests should be deterministic and zero-blast-radius.
-
-The Ghost Proxy solves this by replaying captured **HttpExchange** telemetry in memory inside a hermetic sandbox.
+Boundary uses a local mock proxy and kernel-level network sandboxing to replay recorded HTTP exchanges, enabling deterministic, offline verification of synthesized schemas.
 
 ---
 
-## 2. Architecture
+## 1. Why Sandbox Replay?
 
-```text
-[Sandboxed Test Runner]
-        │
-        │ HTTP Request (e.g., GET https://api.resend.com/emails)
-        ▼
-[HTTP Client Forwarder / SDK Shim]
-   - Sets header: x-boundary-original-url: https://api.resend.com/emails
-   - Connects to: http://127.0.0.1:54321
-        │
-        ▼
-[Rust Ghost Proxy (src/ghost_proxy/server.rs)]
-   - Matches: method ("GET") and target_path ("/emails" or full URL)
-   - Locates: recorded HttpExchange in state
-   - Returns: Status (200 OK), Headers, and Response Body
-        │
-        ▼
-[Sandboxed Application]
-   - Receives exact recorded response bytes
-   - Validates payload against generated Schema.parse(data)
-   - Passes test cleanly without ever touching the public internet
+When Boundary generates runtime validation schemas (such as Zod schemas or Pydantic models) and patches callsites, it verifies that the repaired code executes and parses real API payloads without throwing errors.
+
+Testing against live external APIs during automated repair introduces major issues:
+1. Production API credentials are required and may incur costs.
+2. Third-party services can throttle, rate-limit, or fail transiently.
+3. Network calls introduce non-deterministic execution.
+
+Boundary isolates test execution using OS-level kernel isolation (macOS Seatbelt / Linux Landlock) while routing external HTTP requests to the local mock proxy (`127.0.0.1:54321`).
+
+---
+
+## 2. Architecture and Request Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as Sandboxed Test Suite
+    participant Shim as Client Forwarder / SDK Shim
+    participant Proxy as Mock Proxy (127.0.0.1:54321)
+    participant Kernel as OS Kernel Sandbox
+
+    App->>Shim: HTTP Request (e.g. GET https://api.resend.com/emails)
+    Note over Shim: Adds x-boundary-original-url header
+    Shim->>Proxy: Redirect to http://127.0.0.1:54321/emails
+    Proxy->>Proxy: Match method & path against .boundary/knowledge/exchanges.jsonl
+    alt Recorded exchange matched
+        Proxy-->>Shim: HTTP 200 OK + Recorded response_body
+        Shim-->>App: Mock response bytes
+        App->>App: Schema validation (e.g. Schema.parse(data))
+    else Unmatched request
+        Proxy-->>Shim: HTTP 404 Unmocked Boundary
+        Shim-->>App: Error
+    end
+    App--xKernel: Public egress attempt (if unmocked) -> BLOCKED
 ```
 
 ---
 
-## 3. Payload Isolation & Hermetic Guarantee
+## 3. Isolation Guarantees
 
-The Ghost Proxy guarantees:
-* **Zero Network Leakage**: In combination with macOS `sandbox-exec` or Linux `landlock`, all outbound sockets to the public internet are blocked.
-* **Payload Fidelity**: Serves strictly `exchange.response_body` bytes, matching the exact format the external API returned in production.
-* **Fail-Closed on Unmocked Calls**: If the application tries to access an unrecorded endpoint, the proxy returns `404 Unmocked Boundary`, preventing unexpected network access.
+* **Zero Network Egress**: The OS kernel blocks outbound TCP/UDP sockets to external hosts during `boundary verify`.
+* **Payload Fidelity**: The proxy serves the captured `response_body` bytes matching recorded production traffic.
+* **Fail-Closed Verification**: If code attempts to access unrecorded endpoints, the proxy rejects the call with `404 Unmocked Boundary`, ensuring no untested network paths succeed silently.
+
