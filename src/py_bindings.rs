@@ -37,11 +37,6 @@ fn sandbox_check_supported() -> PyResult<HashMap<String, String>> {
 }
 
 #[pyfunction]
-fn route_and_compress(content: &str) -> String {
-    crate::engines::compression::route_and_compress(content)
-}
-
-#[pyfunction]
 fn schema_diff(old_json: &str, new_json: &str) -> PyResult<String> {
     let old = parse_spec(old_json).map_err(PyValueError::new_err)?;
     let new = parse_spec(new_json).map_err(PyValueError::new_err)?;
@@ -163,7 +158,6 @@ fn ast_polyglot_rewrite(
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sandbox_apply, m)?)?;
     m.add_function(wrap_pyfunction!(sandbox_check_supported, m)?)?;
-    m.add_function(wrap_pyfunction!(route_and_compress, m)?)?;
     m.add_function(wrap_pyfunction!(schema_diff, m)?)?;
     m.add_function(wrap_pyfunction!(ast_locate_callsites, m)?)?;
     m.add_function(wrap_pyfunction!(autopatch_plan, m)?)?;
