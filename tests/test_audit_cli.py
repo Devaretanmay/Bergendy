@@ -98,3 +98,40 @@ def test_is_code_evidence_classifier():
                              "line_content": 'println!("  For Anthropic models:");'}) is False
     assert is_code_evidence({"kind": None, "matched_pattern": "",
                              "line_content": "code"}) is False
+
+
+def test_cli_guard_clean_and_blocking(tmp_path):
+    repo = str(tmp_path / "guarded_repo")
+    os.makedirs(os.path.join(repo, "src"))
+    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+
+    clean_file = os.path.join(repo, "src", "clean.ts")
+    with open(clean_file, "w") as f:
+        f.write("export const x = 1;\n")
+
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    # Run guard on clean staged changes
+    res_clean = _run_boundary_cli(["guard", repo, "--ci"])
+    assert res_clean.returncode == 0
+    assert "Zero unprotected network boundaries" in res_clean.stdout
+
+    # Now add unvalidated fetch
+    unvalidated_file = os.path.join(repo, "src", "api.ts")
+    with open(unvalidated_file, "w") as f:
+        f.write('export async function fetchNews() { return fetch("https://news.api/top"); }\n')
+
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    res_blocking = _run_boundary_cli(["guard", repo])
+    assert res_blocking.returncode == 1
+    assert "Unprotected I/O detected" in res_blocking.stdout
+    assert "src/api.ts" in res_blocking.stdout
+
+
+def test_cli_guard_install(tmp_path):
+    repo = str(tmp_path / "hook_repo")
+    os.makedirs(os.path.join(repo, ".git"))
+    res = _run_boundary_cli(["guard", repo, "--install"])
+    assert res.returncode == 0
+    assert os.path.isfile(os.path.join(repo, ".git", "hooks", "pre-commit"))

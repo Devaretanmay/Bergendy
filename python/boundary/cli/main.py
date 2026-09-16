@@ -1,4 +1,4 @@
-from boundary.cli.enterprise_commands import cmd_resolve
+from boundary.cli.enterprise_commands import cmd_resolve, cmd_guard, cmd_verify
 import argparse
 import dataclasses
 import graphlib
@@ -2666,6 +2666,18 @@ def main():
     p_resolve.add_argument("path", nargs="?", default=".", help="Target repository directory")
     p_resolve.add_argument("--target", default="", help="Specific file to resolve")
 
+    p_guard = subparsers.add_parser("guard", help="Pre-commit and CI guard blocking unvalidated network boundaries")
+    p_guard.add_argument("path", nargs="?", default=".", help="Target repository directory")
+    p_guard.add_argument("--install", action="store_true", help="Install pre-commit hook")
+    p_guard.add_argument("--files", nargs="*", default=None, help="Specific files to guard (defaults to git staged)")
+    p_guard.add_argument("--ci", action="store_true", help="Run in CI mode with exit 0/1")
+    p_guard.add_argument("--strict", action="store_true", help="Strict enforcement mode")
+    p_guard.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+
+    p_verify = subparsers.add_parser("verify", help="Execute isolated sandbox verification replaying captured telemetry")
+    p_verify.add_argument("path", nargs="?", default=".", help="Target repository directory")
+    p_verify.add_argument("--contract-only", action="store_true", help="Run contract verification tests only")
+
     subparsers.add_parser("doctor", help="Blueprint readiness: auth + indexed + test command")
 
     inspect_parser = subparsers.add_parser("inspect", help="Dump declarative topology and project state")
@@ -2967,6 +2979,8 @@ def main():
         "auth": cmd_auth,
         "status": cmd_status,
         "resolve": cmd_resolve,
+        "guard": cmd_guard,
+        "verify": cmd_verify,
         "doctor": cmd_doctor,
         "inspect": cmd_inspect,
         "run": cmd_run,

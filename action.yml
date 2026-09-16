@@ -25,8 +25,13 @@ runs:
     - name: Download Boundary Binary
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/Devaretanmay/Boundary/main/install.sh | sh
-        echo "$HOME/.boundary/bin" >> $GITHUB_PATH
+        curl -sSfL https://raw.githubusercontent.com/Devaretanmay/Boundary/main/install.sh | sh || true
+        if [ -f "$HOME/.boundary/bin/boundary" ]; then
+          echo "$HOME/.boundary/bin" >> $GITHUB_PATH
+        else
+          echo "Installing Boundary via pip..."
+          pip install boundary
+        fi
 
     - name: Run Boundary
       shell: bash

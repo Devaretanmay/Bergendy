@@ -243,16 +243,23 @@ def cmd_guard(args: Any) -> None:
         print(f"{green('[OK]')} Pre-commit guard installed at {dim('.git/hooks/pre-commit')}")
         return
 
-    try:
-        res = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            cwd=workdir,
-            capture_output=True,
-            text=True,
-        )
-        staged_files = [f.strip() for f in res.stdout.splitlines() if f.strip()]
-    except Exception:
-        staged_files = []
+    staged_files = []
+    # If explicit files passed
+    files_arg = getattr(args, "files", None)
+    if files_arg:
+        staged_files = [f.strip() for f in files_arg if f.strip()]
+
+    if not staged_files:
+        try:
+            res = subprocess.run(
+                ["git", "diff", "--cached", "--name-only"],
+                cwd=workdir,
+                capture_output=True,
+                text=True,
+            )
+            staged_files = [f.strip() for f in res.stdout.splitlines() if f.strip()]
+        except Exception:
+            staged_files = []
 
     if not staged_files:
         try:
@@ -266,23 +273,50 @@ def cmd_guard(args: Any) -> None:
         except Exception:
             staged_files = []
 
+    from boundary.runtime_scan import TS_EXTS, PY_EXTS, GO_EXTS, TS_CALL, PY_CALL, GO_CALL, PARSE_GUARD, ANY_CAST
+
     violations = []
     for rel_path in staged_files:
-        if not rel_path.endswith((".ts", ".tsx", ".js", ".jsx")):
+        if not rel_path.endswith(TS_EXTS + PY_EXTS + GO_EXTS):
             continue
         full_path = os.path.join(workdir, rel_path)
         if not os.path.isfile(full_path):
             continue
-        with open(full_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()
+        except OSError:
+            continue
+
+        if rel_path.endswith(PY_EXTS):
+            lang = "python"
+        elif rel_path.endswith(GO_EXTS):
+            lang = "go"
+        else:
+            lang = "typescript"
+
         for idx, line in enumerate(lines, start=1):
-            if "fetch(" in line and "zod" not in line and ".parse(" not in line:
-                col = line.find("fetch(") + 1
+            if lang == "typescript":
+                call = TS_CALL.search(line)
+            elif lang == "python":
+                call = PY_CALL.search(line)
+            else:
+                call = GO_CALL.search(line)
+
+            if not call:
+                continue
+
+            window = "".join(lines[max(0, idx - 2):min(len(lines), idx + 3)])
+            guarded = bool(PARSE_GUARD.search(window))
+            has_any = bool(ANY_CAST.search(window))
+            if not guarded or has_any:
+                col = call.start() + 1
+                client_name = call.group(0).strip()
                 violations.append({
                     "file": rel_path,
                     "line": idx,
                     "col": col,
-                    "issue": "`fetch()` response is not passed through a runtime validator.",
+                    "issue": f"`{client_name}` response is not passed through a runtime validator.",
                 })
 
     if violations:
@@ -293,10 +327,10 @@ def cmd_guard(args: Any) -> None:
             print(f"  File:  {bold(loc)}")
             print(f"  Issue: {v['issue']}\n")
         print("  Automated remediation is available.")
-        print(f"  Run `{cyan('boundary resolve --staged')}` to patch before committing.\n")
+        print(f"  Run `{cyan('boundary resolve')}` to synthesize schemas before committing.\n")
         sys.exit(1)
     else:
-        if getattr(args, "verbose", False):
+        if getattr(args, "verbose", False) or getattr(args, "ci", False):
             print(f"{green('boundary guard:')} Staged changes verified. Zero unprotected network boundaries.")
         sys.exit(0)
 def cmd_verify(args: Any) -> None:
