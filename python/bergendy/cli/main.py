@@ -2642,7 +2642,9 @@ def main():
           bergendy doctor                   Verify setup, AI provider, and test runner readiness
     """)
 
+    prog_name = os.path.basename(sys.argv[0]) if (sys.argv and sys.argv[0]) else "bergendy"
     parser = argparse.ArgumentParser(
+        prog=prog_name,
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

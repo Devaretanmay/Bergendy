@@ -79,6 +79,12 @@ class _AliasLoader:
             return self.target_loader.is_package(target_name)
         return False
 
+    def get_filename(self, fullname):
+        if self.target_loader and hasattr(self.target_loader, "get_filename"):
+            target_name = "bergendy" + fullname[len("boundary"):]
+            return self.target_loader.get_filename(target_name)
+        return getattr(self.target_mod, "__file__", None)
+
 
 class _BoundaryAliasFinder:
     @classmethod
@@ -93,7 +99,12 @@ class _BoundaryAliasFinder:
         target_mod = importlib.import_module(target_name)
         target_spec = getattr(target_mod, "__spec__", None)
         target_loader = getattr(target_spec, "loader", None)
-        return importlib.util.spec_from_loader(fullname, _AliasLoader(target_mod, target_loader))
+        origin = getattr(target_spec, "origin", None) or getattr(target_mod, "__file__", None)
+        return importlib.util.spec_from_loader(
+            fullname,
+            _AliasLoader(target_mod, target_loader),
+            origin=origin,
+        )
 
 
 if not any(getattr(hook, "__name__", "") == "_BoundaryAliasFinder" for hook in sys.meta_path):
