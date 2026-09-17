@@ -1,15 +1,15 @@
-# TypeScript & Node.js Native SDK (`@boundary/sdk`)
+# TypeScript & Node.js Native SDK (`@bergendy/sdk`)
 
-> **Upcoming Roadmap:** The `@boundary/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS) is planned for upcoming distribution.
+> **Upcoming Roadmap:** The `@bergendy/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS) is planned for upcoming distribution.
 
-The TypeScript SDK provides high-performance Node.js bindings to the Boundary Rust core via NAPI-RS.
+The TypeScript SDK provides high-performance Node.js bindings to the Bergendy Rust core via NAPI-RS.
 
 ---
 
 ## 1. Installation
 
 ```bash
-npm install @boundary/sdk
+npm install @bergendy/sdk
 ```
 
 ---

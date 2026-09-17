@@ -1,9 +1,9 @@
-# Boundary Virtual Agent Lanes & Integration Architecture
+# Bergendy Virtual Agent Lanes & Integration Architecture
 
-Boundary introduces **Virtual Agent Lanes**-the developer workspace abstraction for AI agents.
+Bergendy introduces **Virtual Agent Lanes**-the developer workspace abstraction for AI agents.
 
 ```text
-BOUNDARY WORKSPACE
+BERGENDY WORKSPACE
    │
    ├── Agent Sessions & Virtual Lanes
    │   ├── Lane: auth-fix  (Claude Code)  -> Changes: [src/auth.py]
@@ -11,9 +11,9 @@ BOUNDARY WORKSPACE
    │   └── Lane: tests     (Codex)        -> Changes: [tests/test_auth.py]
    │
    ├── Integration Engine
-   │   ├── boundary integrate create auth-fix logging
-   │   ├── boundary integrate preview
-   │   └── boundary integrate apply
+   │   ├── bergendy integrate create auth-fix logging
+   │   ├── bergendy integrate preview
+   │   └── bergendy integrate apply
    │
    └── Kernel Execution Isolation
        ├── Landlock (Linux) / Seatbelt (macOS) Process Sandboxing
@@ -41,28 +41,28 @@ BOUNDARY WORKSPACE
 ### 1. Running Concurrent Agent Lanes
 ```bash
 # Agent 1 (Claude Code) in 'auth-fix' lane
-boundary wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
+bergendy wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
 
 # Agent 2 (OpenCode) in 'logging' lane concurrently
-boundary wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
+bergendy wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
 ```
 
 ### 2. Inspecting Workspace Lanes
 ```bash
-boundary lanes
-boundary lane inspect auth-fix
+bergendy lanes
+bergendy lane inspect auth-fix
 ```
 
 ### 3. Combining & Integrating Lanes
 ```bash
 # Create integration candidate combining auth-fix and logging
-boundary integrate create auth-fix logging
+bergendy integrate create auth-fix logging
 
 # Preview candidate diffs and conflict status
-boundary integrate preview
+bergendy integrate preview
 
 # Apply cleanly to workspace
-boundary integrate apply
+bergendy integrate apply
 ```
 
 ---
@@ -73,25 +73,25 @@ Every governed execution records a **change set** (BLAKE3 file diffs attributed 
 
 ```bash
 # Review what agents changed (filter by execution, or --unapplied for pending work)
-boundary diff
-boundary diff --execution exec_1723635840000
-boundary diff --unapplied
+bergendy diff
+bergendy diff --execution exec_1723635840000
+bergendy diff --unapplied
 
 # Promote a change set into the workspace baseline.
 # Overlapping changes from other un-applied executions surface as conflicts;
 # --force applies anyway.
-boundary apply
-boundary apply --execution exec_1723635840000
+bergendy apply
+bergendy apply --execution exec_1723635840000
 
 # Reverse the last apply operation (or a specific one)
-boundary undo
-boundary undo --execution exec_1723635840000
+bergendy undo
+bergendy undo --execution exec_1723635840000
 
 # Restore the workspace from a session's pre-execution snapshot checkpoint
-boundary restore sess_1723635840000
+bergendy restore sess_1723635840000
 
 # Roll back a session (restores its snapshot and marks it ROLLED_BACK)
-boundary session rollback sess_1723635840000
+bergendy session rollback sess_1723635840000
 ```
 
 **Semantics:**

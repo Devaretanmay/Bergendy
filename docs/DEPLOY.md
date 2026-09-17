@@ -1,8 +1,8 @@
-# Self-Hosting the Boundary GitHub App Daemon (Operator Guide)
+# Self-Hosting the Bergendy GitHub App Daemon (Operator Guide)
 
 > [!NOTE]
-> **This guide is for platform operators hosting their own Boundary webhook daemon.**
-> End-user developers do NOT need to follow this guide or generate GitHub App private keys. Customers simply install the hosted Boundary GitHub App on their repository.
+> **This guide is for platform operators hosting their own Bergendy webhook daemon.**
+> End-user developers do NOT need to follow this guide or generate GitHub App private keys. Customers simply install the hosted Bergendy GitHub App on their repository.
 
 ## 1. GitHub App setup
 
@@ -25,29 +25,29 @@
 ## 3. Run with Docker
 
 ```bash
-docker build -f docker/Dockerfile.app -t boundary-app:1.1.3 .
-docker run -d --name boundary -p 8080:8080 --env-file .env -v boundary-data:/data boundary-app:1.1.3
+docker build -f docker/Dockerfile.app -t bergendy-app:1.1.5 .
+docker run -d --name bergendy -p 8080:8080 --env-file .env -v bergendy-data:/data bergendy-app:1.1.5
 ```
 
 With background monitoring (poll READY repos every 5 minutes):
 
 ```bash
-docker run -d --name boundary -p 8080:8080 --env-file .env -v boundary-data:/data \
-  boundary-app:1.1.3 sh -c "boundary app serve --port ${PORT:-8080} --watch 300"
+docker run -d --name bergendy -p 8080:8080 --env-file .env -v bergendy-data:/data \
+  bergendy-app:1.1.5 sh -c "bergendy app serve --port ${PORT:-8080} --watch 300"
 ```
 
 ## 4. Run on bare metal
 
 ```bash
-pip install boundary
+pip install bergendy
 export BOUNDARY_WEBHOOK_SECRET=... GITHUB_TOKEN=...
-boundary app serve --port 8080 --watch 300
+bergendy app serve --port 8080 --watch 300
 ```
 
 ## 5. Verify
 
 - `GET /health` → `{"status": "healthy"}`.
-- `boundary doctor` on the host shows GitHub CONNECTED once token env is set.
+- `bergendy doctor` on the host shows GitHub CONNECTED once token env is set.
 - Install the App on a test repo: an onboarding issue appears and the repo
   reaches READY; open a PR touching a migrated SDK to see the contract guard.
 

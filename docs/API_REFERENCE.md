@@ -1,6 +1,6 @@
 # Bergendy Python & Engine API Reference
 
-**Version:** 1.1.3  
+**Version:** 1.1.5  
 **Package:** `bergendy` (PyPI, with `boundary` backward-compatibility alias)
 
 ---

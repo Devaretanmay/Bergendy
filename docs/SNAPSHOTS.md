@@ -1,6 +1,6 @@
 # BLAKE3 Snapshot & Differential Rollback Guide
 
-Boundary provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
+Bergendy provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
 
 ---
 
@@ -8,24 +8,24 @@ Boundary provides high-speed, BLAKE3 hash-based workspace snapshotting and diffe
 
 1. **Pre-Execution Manifest**: Before an agent or workflow step executes, `SnapshotManager` scans the workspace directory (excluding `.git`, `.venv`, `node_modules`, `target`) and computes 16-byte BLAKE3 hashes for every file.
 2. **Execution Tracking**: The agent runs inside its isolated kernel compartment.
-3. **Differential Restoration (`boundary undo`)**:
+3. **Differential Restoration (`bergendy undo`)**:
    - Modified files are restored to their exact pre-execution content.
    - Deleted files are recovered.
    - Newly created stray files are cleanly purged.
 
 ---
 
-## 2. CLI Usage (`boundary undo`)
+## 2. CLI Usage (`bergendy undo`)
 
 ```bash
 # Execute an agent
-boundary claude
+bergendy claude
 
 # Inspect changes
-boundary diff
+bergendy diff
 
 # Rollback physical files instantly if the agent corrupted code
-boundary undo
+bergendy undo
 ```
 
 ---
@@ -59,4 +59,4 @@ snap.cleanup()
 
 ## 4. Automatic Snapshotting in Workflows & Agent Sessions
 
-When using `boundary claude`, `boundary --run <workflow>`, or `AgentBoundary`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.
+When using `bergendy claude`, `bergendy --run <workflow>`, or `AgentBoundary`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.

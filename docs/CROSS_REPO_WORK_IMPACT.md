@@ -1,6 +1,6 @@
 # Cross-Repository Active-Work Impact
 
-Boundary detects when a change in one connected repository is likely to affect
+Bergendy detects when a change in one connected repository is likely to affect
 active developer work in another connected repository.
 
 ```text
@@ -17,7 +17,7 @@ produces a user-visible notification. Transient impact retracts silently.
 ## How it works
 
 1. **Observe.** The `push` webhook is ingested into one evolving candidate per
-   repository + branch. Boundary attempts to check out the exact pushed SHA;
+   repository + branch. Bergendy attempts to check out the exact pushed SHA;
    when unavailable, analysis is explicitly marked as fallback, never as
    exact-revision analysis.
 2. **Filter cheaply.** Installed repositories only (v1 scope — no external or

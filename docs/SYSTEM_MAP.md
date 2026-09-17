@@ -1,4 +1,4 @@
-# Boundary System Map: Everything We Have
+# Bergendy System Map: Everything We Have
 
 > One page that shows the whole machine. Code is the authority; this map tracks it.
 
@@ -54,7 +54,7 @@ flowchart TD
         KB["knowledge.py<br/>namespaced flywheel · failure quarantine"]
     end
     subgraph GH["GitHub surface"]
-        BOT["pr_bot.py · howl_bot.py<br/>PR · @boundary comments · install handlers"]
+        BOT["pr_bot.py · howl_bot.py<br/>PR · @bergendy comments · install handlers"]
         PROV["provisioning.py<br/>clone/pull cache · exact PR heads"]
         INST["installations.py<br/>PENDING→INDEXED→READY records"]
         WATCH["watch.py<br/>poll READY repos · fire on new drift"]

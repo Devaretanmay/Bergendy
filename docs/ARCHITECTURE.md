@@ -1,6 +1,6 @@
-# Boundary System Architecture
+# Bergendy System Architecture
 
-Boundary detects unguarded runtime boundaries, synthesizes rigid schemas from observed HTTP traffic, patches callsites using native AST rewrites, and verifies repairs in a network-isolated kernel sandbox.
+Bergendy detects unguarded runtime boundaries, synthesizes rigid schemas from observed HTTP traffic, patches callsites using native AST rewrites, and verifies repairs in a network-isolated kernel sandbox.
 
 ---
 
@@ -52,16 +52,16 @@ flowchart TD
 
 ## 2. Core Components
 
-### A. Static AST Boundary Scanner (`src/engines/ast/`, `python/boundary/runtime_scan.py`)
+### A. Static AST Boundary Scanner (`src/engines/ast/`, `python/bergendy/runtime_scan.py`)
 Scans source files across supported languages:
 * **TypeScript / JavaScript**: Tracks `fetch()`, `axios` invocations, and unsafe `as any` type assertions.
 * **Python**: Identifies unmodeled `requests.get()`, `httpx.get()`, `aiohttp`, and raw dictionary indexing on JSON outputs.
 * **Go**: Inspects `http.Get()`, `http.Post()`, and `client.Do()` calls lacking typed unmarshaling.
 
-### B. Payload Isolation Engine (`python/boundary/hunt.py`)
+### B. Payload Isolation Engine (`python/bergendy/hunt.py`)
 Isolates payload data to prevent context leakage:
 * Telemetry envelopes often contain transport wrappers (`request_method`, `request_headers`, `response_status`).
-* Boundary strips all envelope fields, feeding only `exchange.response_body` to the schema synthesizer.
+* Bergendy strips all envelope fields, feeding only `exchange.response_body` to the schema synthesizer.
 * Unwraps single samples to generate root object structures instead of unwanted array wrappers.
 
 ### C. Polyglot AST Rewriter (`src/engines/rewriter.rs`)

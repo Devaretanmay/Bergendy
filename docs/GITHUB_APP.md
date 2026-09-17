@@ -1,19 +1,19 @@
-# Boundary GitHub App: Customer Onboarding & Bot Behavior
+# Bergendy GitHub App: Customer Onboarding & Bot Behavior
 
 > One agent, two authorities. `Consult` explains and files Issues. `Work` repairs and opens PRs. The reasoning engine is identical; only what it may touch differs.
 
 ## Customer Onboarding (Zero Infrastructure Setup)
 
-For developers and engineering teams, adding Boundary to a GitHub repository is completely automated:
+For developers and engineering teams, adding Bergendy to a GitHub repository is completely automated:
 
 ```text
 GitHub
   ↓
-Install Boundary GitHub App on repo
+Install Bergendy GitHub App on repo
   ↓
 Choose repository
   ↓
-Boundary runs Day-0 AST evidence scan
+Bergendy runs Day-0 AST evidence scan
   ↓
 Connect AI provider reasoning key (BYOK)
   ↓
@@ -64,13 +64,13 @@ New installations start in `consult`: accurate Issues build trust in the reasoni
 
 ## 5. Two Product Modes: Consult & Work (Personas: Howl & Hunt)
 
-Boundary cleanly defines its product abstractions:
-- **Consult (`@howl` / `boundary consult`)**: Explains maintenance problems with deep AI reasoning. For any detected maintenance problem (dependency drift, contract breaking bump, external change), Consult files a **GitHub Issue** detailing what changed, what is affected, why, what should change, and what must NOT change. When invoked on a PR (`@howl`), it provides an advisory impact breakdown on the PR thread. Consult is strictly read-only: its GitHub client possesses read-only permissions and **never modifies files, never commits, and never opens PRs**.
-- **Work (`@hunt` / `boundary work` / `boundary hunt <id>`)**: Autonomous repair worker with repository write authority. Reasons with AI, authors the patch with AI, executes the real test suite in an isolated checkout, and delivers a verified merge-ready **GitHub PR** with BLAKE3 cryptographic receipts only on a sealed, green, scope-clean repair. Anything else fails closed without opening a PR.
+Bergendy cleanly defines its product abstractions:
+- **Consult (`@howl` / `bergendy consult`)**: Explains maintenance problems with deep AI reasoning. For any detected maintenance problem (dependency drift, contract breaking bump, external change), Consult files a **GitHub Issue** detailing what changed, what is affected, why, what should change, and what must NOT change. When invoked on a PR (`@howl`), it provides an advisory impact breakdown on the PR thread. Consult is strictly read-only: its GitHub client possesses read-only permissions and **never modifies files, never commits, and never opens PRs**.
+- **Work (`@hunt` / `bergendy work` / `bergendy hunt <id>`)**: Autonomous repair worker with repository write authority. Reasons with AI, authors the patch with AI, executes the real test suite in an isolated checkout, and delivers a verified merge-ready **GitHub PR** with BLAKE3 cryptographic receipts only on a sealed, green, scope-clean repair. Anything else fails closed without opening a PR.
 
 ## 6. Anatomy of a review
 
-When a pull request opens against a monitored repository, Boundary:
+When a pull request opens against a monitored repository, Bergendy:
 
 1. **Checks out the exact PR head** (falls back to the tracked branch with a disclosed marker if the fetch fails).
 2. **Scans for contract impact** — dependency drift mapped to callsites, zero model calls.
@@ -80,9 +80,9 @@ When a pull request opens against a monitored repository, Boundary:
 
 ## 7. Troubleshooting
 
-- **No comment appeared**: check the webhook deliveries tab for failures, confirm the secret matches `BOUNDARY_WEBHOOK_SECRET`, verify the repo reached READY (`boundary doctor`), and confirm the PR isn't filtered by `ignore_paths` or `exclude_labels`.
-- **Stale results**: comment `@boundary` on the PR to re-run against the current head.
-- **REFUSED / NOT RUN**: the bot found impact it cannot safely repair (often missing AI credentials or no test suite). Run `boundary doctor` for the exact missing piece.
+- **No comment appeared**: check the webhook deliveries tab for failures, confirm the secret matches `BOUNDARY_WEBHOOK_SECRET`, verify the repo reached READY (`bergendy doctor`), and confirm the PR isn't filtered by `ignore_paths` or `exclude_labels`.
+- **Stale results**: comment `@bergendy` on the PR to re-run against the current head.
+- **REFUSED / NOT RUN**: the bot found impact it cannot safely repair (often missing AI credentials or no test suite). Run `bergendy doctor` for the exact missing piece.
 
 ## 8. Deployment
 

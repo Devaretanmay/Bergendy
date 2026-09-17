@@ -1,10 +1,10 @@
-# Contributing to Boundary
+# Contributing to Bergendy
 
-We welcome contributions to the Boundary source-available runtime!
+We welcome contributions to the Bergendy source-available runtime!
 
 ## Licensing & License Agreement
 
-By contributing to Boundary, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE), and to the terms of the [CLA](CLA.md).
+By contributing to Bergendy, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE), and to the terms of the [CLA](CLA.md).
 
 ## Development Setup
 

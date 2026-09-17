@@ -1,6 +1,21 @@
 # Changelog
 
-All notable changes to Boundary are documented here.
+All notable changes to Bergendy are documented here.
+
+## [1.1.5] - 2026-09-17
+
+### Added
+- Rename release to **Bergendy** (`bergendy` on PyPI).
+- Zero-token deterministic schema synthesis fallback when offline or lacking LLM API keys.
+- Next.js auto-instrumentation injection on `bergendy init`.
+- Root `--version` flag (`bergendy --version`).
+- Clean `bergendy fix` interactive guided flow with Ghost Proxy verification.
+
+## [1.1.4] - 2026-09-17
+
+### Added
+- Next.js auto-instrumentation detection.
+- `--version` CLI argument.
 
 ## [1.1.3] - 2026-09-15
 
@@ -42,4 +57,4 @@ All notable changes to Boundary are documented here.
 ## [1.0.0] - 2026-08-15
 
 ### Added
-- Initial release of Boundary: Autonomous External-Change Intelligence & Controlled Execution.
+- Initial release of Bergendy: Autonomous External-Change Intelligence & Controlled Execution.

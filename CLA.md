@@ -1,6 +1,6 @@
 # Contributor License Agreement
 
-Thank you for contributing to Boundary.
+Thank you for contributing to Bergendy.
 
 By submitting a pull request, comment, or any other contribution to this
 repository, you agree to the following:
@@ -8,7 +8,7 @@ repository, you agree to the following:
 1. **Copyright license.** You grant Boundary Labs (Tanmay Jayant Devare) a
    perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to
    use, reproduce, modify, distribute, sublicense, and relicense your
-   contribution as part of Boundary - including under proprietary or dual-license
+   contribution as part of Bergendy - including under proprietary or dual-license
    terms in future commercial offerings.
 
 2. **Patent license.** To the extent you hold patent claims covering your

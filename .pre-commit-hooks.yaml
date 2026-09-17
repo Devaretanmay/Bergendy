@@ -1,15 +1,23 @@
-- id: boundary-gate
-  name: boundary gate
+- id: bergendy-watch
+  name: bergendy watch
   description: Block commits introducing unvalidated external network boundaries
-  entry: boundary gate
+  entry: bergendy watch --ci
   language: python
   types_or: [javascript, jsx, ts, tsx, python, go]
   pass_filenames: true
 
-- id: boundary-guard
-  name: boundary guard
+- id: bergendy-gate
+  name: bergendy gate
   description: Block commits introducing unvalidated external network boundaries
-  entry: boundary gate
+  entry: bergendy watch --ci
+  language: python
+  types_or: [javascript, jsx, ts, tsx, python, go]
+  pass_filenames: true
+
+- id: boundary-gate
+  name: boundary gate (legacy alias)
+  description: Block commits introducing unvalidated external network boundaries
+  entry: bergendy watch --ci
   language: python
   types_or: [javascript, jsx, ts, tsx, python, go]
   pass_filenames: true
