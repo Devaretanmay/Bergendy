@@ -1,11 +1,11 @@
-name: 'Boundary Enforcement'
+name: 'Bergendy Enforcement'
 description: 'Scan for unprotected network boundaries and enforce runtime schemas in CI/CD.'
-author: 'Boundary Team'
+author: 'Bergendy Team'
 inputs:
   command:
-    description: 'The boundary command to run (scan, gate, verify)'
+    description: 'The bergendy command to run (see, watch, prove, fix)'
     required: false
-    default: 'scan'
+    default: 'see'
   fail-on-unprotected:
     description: 'Fail the CI job if unprotected network boundaries are detected'
     required: false
@@ -22,27 +22,21 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Download Boundary Binary
+    - name: Install Bergendy
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/Devaretanmay/Boundary/main/install.sh | sh || true
-        if [ -f "$HOME/.boundary/bin/boundary" ]; then
-          echo "$HOME/.boundary/bin" >> $GITHUB_PATH
-        else
-          echo "Installing Boundary via pip..."
-          pip install boundary
-        fi
+        pip install bergendy || pip install --user bergendy
 
-    - name: Run Boundary
+    - name: Run Bergendy
       shell: bash
       run: |
         CMD="${{ inputs.command }}"
-        if [ "$CMD" = "scan" ]; then
-          boundary scan "${{ inputs.path }}" --min-score="${{ inputs.min-score }}" $( [ "${{ inputs.fail-on-unprotected }}" = "true" ] && echo "--fail-on-unprotected" )
-        elif [ "$CMD" = "gate" ] || [ "$CMD" = "guard" ]; then
-          boundary gate "${{ inputs.path }}" --ci --strict
-        elif [ "$CMD" = "verify" ]; then
-          boundary verify "${{ inputs.path }}" --contract-only
+        if [ "$CMD" = "see" ] || [ "$CMD" = "scan" ]; then
+          bergendy see "${{ inputs.path }}"
+        elif [ "$CMD" = "watch" ] || [ "$CMD" = "gate" ] || [ "$CMD" = "guard" ]; then
+          bergendy watch "${{ inputs.path }}" --ci --strict
+        elif [ "$CMD" = "prove" ] || [ "$CMD" = "verify" ]; then
+          bergendy prove "${{ inputs.path }}" --contract-only
         else
-          boundary "$CMD" "${{ inputs.path }}"
+          bergendy "$CMD" "${{ inputs.path }}"
         fi

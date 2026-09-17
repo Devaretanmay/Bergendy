@@ -21,7 +21,7 @@ except Exception:
     try:
         __version__ = _package_version("boundary")
     except Exception:
-        __version__ = "1.1.3"
+        __version__ = "1.1.4"
 
 
 __all__ = [
