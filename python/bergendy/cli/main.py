@@ -104,7 +104,7 @@ def _print_json(data: dict):
 
 def _load_topology() -> dict:
     if not os.path.exists(TOPOLOGY_FILE):
-        print(f"Error: Not a boundary project (missing {TOPOLOGY_FILE}). Run 'boundary init' first.")
+        print(f"Error: Not a bergendy project (missing {TOPOLOGY_FILE}). Run 'bergendy init' first.")
         sys.exit(1)
     with open(TOPOLOGY_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -118,7 +118,7 @@ def _save_topology(topo: dict):
 
 
 def _resolve_real_binary(agent_name: str, workspace_root: str) -> str | None:
-    """Resolve the real agent binary, excluding Boundary's own shim dir from PATH."""
+    """Resolve the real agent binary, excluding Bergendy's own shim dir from PATH."""
     shim_dir = os.path.abspath(os.path.join(workspace_root, ".boundary", "bin"))
     clean_path = os.pathsep.join(
         p for p in os.environ.get("PATH", "").split(os.pathsep)
@@ -128,7 +128,7 @@ def _resolve_real_binary(agent_name: str, workspace_root: str) -> str | None:
 
 
 def cmd_init(args):
-    """Initialize Boundary in the repository: detect repo, check GitHub & AI, index contracts, and report readiness."""
+    """Initialize Bergendy in the repository: detect repo, check GitHub & AI, index contracts, and report readiness."""
     workdir = os.path.abspath(getattr(args, "path", ".") or ".")
 
     for sub in ("knowledge", "snapshots", "state", "logs", "boxes"):
@@ -170,19 +170,21 @@ def cmd_init(args):
         model_str = f" ({m_name})" if m_name else ""
         print(f"[OK] AI provider: {p_name}{model_str}")
     else:
-        print("- AI provider: none configured (run 'boundary auth' to connect BYOK reasoning key)")
+        print("- AI provider: none configured (run 'bergendy auth' to connect BYOK reasoning key)")
 
     print("[OK] Maintenance memory initialized (.boundary/knowledge/)")
     print()
     print("READY")
     print()
-    print("Boundary can now:")
-    print("  Consult — find and explain maintenance issues (boundary consult)")
-    print("  Work    — repair, verify, and open PRs (boundary work)")
+    print("Bergendy can now:")
+    print("  See   — inspect external dependency callsites (bergendy see)")
+    print("  Fix   — draft runtime schemas and patch callsites (bergendy fix)")
+    print("  Prove — replay recorded traffic in Ghost Proxy sandbox (bergendy prove)")
+    print("  Watch — enforce zero open calls in pre-commit and CI (bergendy watch)")
 
 
 def cmd_status(args):
-    """Show Boundary product status: GitHub, AI provider, Active Repo, Repo Key, Howl & Hunt."""
+    """Show Bergendy product status: GitHub, AI provider, Active Repo, Repo Key, Howl & Hunt."""
     summary = get_active_provider_summary()
     gh_user = _github_identity()
     gh_status = f"CONNECTED ({gh_user})" if gh_user else ("CONNECTED" if bool(os.environ.get("GITHUB_TOKEN") or os.environ.get("BOUNDARY_GITHUB_TOKEN")) else "NOT CONFIGURED")
@@ -200,7 +202,7 @@ def cmd_status(args):
     index_state = record.get("index_state", "READY") if record else "READY"
     
     print("================================================================================")
-    print("                              BOUNDARY STATUS                                     ")
+    print("                              BERGENDY STATUS                                     ")
     print("================================================================================\n")
     print(f"GitHub:             {gh_status}")
     print(f"AI:                 {ai_status}")
@@ -830,7 +832,7 @@ def cmd_lanes(args):
     lane_mgr = LaneManager(workdir=ws_root)
     lanes = lane_mgr.list_lanes()
     if not lanes:
-        print("No virtual agent lanes found. Run 'boundary lane create <name>' or 'boundary wrap --lane <name>' first.")
+        print("No virtual agent lanes found. Run 'bergendy lane create <name>' or 'bergendy wrap --lane <name>' first.")
         return
     print(f"Virtual Agent Lanes ({len(lanes)}):")
     for lane in lanes:
@@ -848,7 +850,7 @@ def cmd_lane_inspect(args):
         _print_json(lane.to_dict())
     else:
         print("================================================================")
-        print(f"              BOUNDARY VIRTUAL AGENT LANE #{lane.lane_id}        ")
+        print(f"              BERGENDY VIRTUAL AGENT LANE #{lane.lane_id}        ")
         print("================================================================")
         print(f"Lane Name   : {lane.name}")
         print(f"Agent       : {lane.agent_id}")
@@ -886,7 +888,7 @@ def cmd_sessions(args):
     mgr = SessionManager(workdir=ws_root)
     sessions = mgr.list_sessions()
     if not sessions:
-        print("No recorded agent sessions found. Run 'boundary wrap' or 'boundary run' first.")
+        print("No recorded agent sessions found. Run 'bergendy wrap' or 'bergendy run' first.")
         return
     print(f"Recorded Agent Sessions ({len(sessions)}):")
     for s in sessions:
@@ -1332,7 +1334,7 @@ def cmd_diff(args):
     """Show change sets associated with agent executions (the review surface)."""
     ws_root = find_workspace_root()
     if not ws_root:
-        print("Error: Not inside a Boundary workspace. Run 'boundary init' first.")
+        print("Error: Not inside a Bergendy workspace. Run 'bergendy init' first.")
         sys.exit(1)
 
     exec_mgr = ExecutionManager(workdir=ws_root)
@@ -1360,9 +1362,9 @@ def cmd_diff(args):
         })
         return
 
-    print("\nBOUNDARY DIFF - changes associated with agent executions\n")
+    print("\nBERGENDY DIFF (BOUNDARY DIFF) - changes associated with agent executions\n")
     if not records:
-        print("  (no change sets recorded - run an agent under Boundary first)")
+        print("  (no change sets recorded - run an agent under Bergendy first)")
         print()
         return
 
@@ -1417,7 +1419,7 @@ def _git_commit_execution(
         print(f"  Error staging files with git: {stage_res.stderr.strip()}")
         return False
 
-    msg_header = user_message or f"Boundary: apply changes from {ex.agent_name} ({ex.execution_id})"
+    msg_header = user_message or f"Bergendy: apply changes from {ex.agent_name} ({ex.execution_id})"
     full_commit_msg = f"{msg_header}\n\n{ex.git_trailers()}\n"
 
     commit_res = subprocess.run(
@@ -1469,7 +1471,7 @@ def cmd_apply(args):
     """Promote selected change sets into the workspace baseline, with optional Git commit."""
     ws_root = find_workspace_root()
     if not ws_root:
-        print("Error: Not inside a Boundary workspace. Run 'boundary init' first.")
+        print("Error: Not inside a Bergendy workspace. Run 'bergendy init' first.")
         sys.exit(1)
 
     exec_mgr = ExecutionManager(workdir=ws_root)
@@ -1492,7 +1494,7 @@ def cmd_apply(args):
     print(f"\nApplied {len(applied_targets)} change set(s).")
 
     if getattr(args, "commit", False):
-        print("\nCreating Git commit(s) with Boundary metadata trailers...")
+        print("\nCreating Git commit(s) with Bergendy metadata trailers...")
         for ex in applied_targets:
             _git_commit_execution(ws_root, ex, user_message=getattr(args, "message", None))
 
@@ -1503,7 +1505,7 @@ def cmd_commit(args):
     """Stage and commit applied execution change sets to Git with RFC-5322 metadata trailers."""
     ws_root = find_workspace_root()
     if not ws_root:
-        print("Error: Not inside a Boundary workspace. Run 'boundary init' first.")
+        print("Error: Not inside a Bergendy workspace. Run 'bergendy init' first.")
         sys.exit(1)
 
     exec_mgr = ExecutionManager(workdir=ws_root)
@@ -1537,10 +1539,10 @@ def cmd_commit(args):
 
 
 def cmd_undo(args):
-    """Reverse the last Boundary-managed apply operation and restore the worktree."""
+    """Reverse the last Bergendy-managed apply operation and restore the worktree."""
     ws_root = find_workspace_root()
     if not ws_root:
-        print("Error: Not inside a Boundary workspace. Run 'boundary init' first.")
+        print("Error: Not inside a Bergendy workspace. Run 'bergendy init' first.")
         sys.exit(1)
 
     exec_mgr = ExecutionManager(workdir=ws_root)
@@ -1583,7 +1585,7 @@ def cmd_restore(args):
     """Restore the workspace from a session's snapshot checkpoint."""
     ws_root = find_workspace_root()
     if not ws_root:
-        print("Error: Not inside a Boundary workspace. Run 'boundary init' first.")
+        print("Error: Not inside a Bergendy workspace. Run 'bergendy init' first.")
         sys.exit(1)
 
     sess_mgr = SessionManager(workdir=ws_root)
@@ -1768,7 +1770,7 @@ def cmd_inventory(args):
     critical = sum(1 for d in deps if d.get("health") in ("Deprecated", "Retired"))
     if critical > 0:
         print(f"[ALERT] {critical} critical dependencies require immediate attention.")
-        print("   Run `boundary work` to start AI-authored repair and verified PR delivery.")
+        print("   Run `bergendy fix` to start AI-authored repair and verified PR delivery.")
 
 
 
@@ -1812,12 +1814,12 @@ def cmd_explain(args):
 
 def _print_auth_warning():
     print("================================================================================")
-    print("                BOUNDARY: AI PROVIDER AUTHENTICATION REQUIRED                   ")
+    print("                BERGENDY: AI PROVIDER AUTHENTICATION REQUIRED                   ")
     print("================================================================================\n")
     print("[ERROR] No AI provider configured.\n")
-    print("Boundary requires an AI provider to analyze dependencies and maintain your code.")
+    print("Bergendy requires an AI provider to analyze dependencies and maintain your code.")
     print("To connect your provider, run:\n")
-    print("  boundary auth\n")
+    print("  bergendy auth\n")
     print("Or provide credentials via environment variables:")
     print("  export ANTHROPIC_API_KEY=\"sk-ant-...\"    (for Claude 3.5 Sonnet)")
     print("  export OPENAI_API_KEY=\"sk-...\"           (for GPT-4o)\n")
@@ -1846,14 +1848,14 @@ def _github_identity() -> str | None:
 
 
 def cmd_reviews(args):
-    """List past Boundary maintenance runs from the repository ledger."""
+    """List past Bergendy maintenance runs from the repository ledger."""
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
     history = get_migration_history(root_path)
     if not history:
-        print("No Boundary maintenance runs recorded for this repository yet.")
-        print("Run `boundary fix` to create the first entry.")
+        print("No Bergendy maintenance runs recorded for this repository yet.")
+        print("Run `bergendy fix` to create the first entry.")
         return
-    print(f"Boundary maintenance runs ({len(history)}):")
+    print(f"Bergendy maintenance runs ({len(history)}):")
     for record in history[-20:]:
         outcome = "GREEN" if record.get("test_exit_code") == 0 and record.get("blast_radius_zero") else "OTHER"
         print(f"  - {record.get('timestamp_utc', '?')}  {record.get('provider_name', '?')} "
@@ -1889,7 +1891,7 @@ def cmd_auth(args):
     if getattr(args, "status", False):
         summary = get_active_provider_summary()
         print("================================================================================")
-        print("                 BOUNDARY: AI PROVIDER CREDENTIAL STATUS                         ")
+        print("                 BERGENDY: AI PROVIDER CREDENTIAL STATUS                         ")
         print("================================================================================\n")
         if summary["configured"]:
             print("Status:       CONFIGURED [OK]")
@@ -1903,13 +1905,13 @@ def cmd_auth(args):
             print(f"GitHub:       {gh_user}" if gh_user else "GitHub:       NOT CONFIGURED")
         else:
             print("Status:       NOT CONFIGURED [REQUIRED]")
-            print("Action:       Run 'boundary auth' to connect an AI provider.")
+            print("Action:       Run 'bergendy auth' to connect an AI provider.")
         print("\n================================================================================")
         return
 
     if getattr(args, "clear", False):
         clear_credentials()
-        print("[OK] Stored Boundary credentials removed.")
+        print("[OK] Stored Bergendy credentials removed.")
         return
 
     provider = getattr(args, "provider", None)
@@ -1920,7 +1922,7 @@ def cmd_auth(args):
     # If not provided via CLI flags, prompt interactively if tty is available
     if not provider or not api_key:
         print("================================================================================")
-        print("                   BOUNDARY: CONNECT YOUR AI PROVIDER                            ")
+        print("                   BERGENDY: CONNECT YOUR AI PROVIDER                            ")
         print("================================================================================\n")
         print("Select your AI Provider:")
         print("  1) Anthropic (Claude 3.5 Sonnet) [Recommended]")
@@ -1930,7 +1932,7 @@ def cmd_auth(args):
 
         if not sys.stdin.isatty() and (not provider or not api_key):
             print("Error: Running in non-interactive environment. Please supply flags:")
-            print("  boundary auth --provider <anthropic|openai|groq> --api-key <...>")
+            print("  bergendy auth --provider <anthropic|openai|groq> --api-key <...>")
             sys.exit(1)
 
         choice = input("Enter choice [1-4] (default: 1): ").strip() or "1"
@@ -1973,13 +1975,13 @@ def cmd_auth(args):
 
     # Automatic Day-0 Knowledge Graph Indexing
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
-    print(f"\n[INDEXING] Initializing Boundary Knowledge Graph for: {root_path}...")
+    print(f"\n[INDEXING] Initializing Bergendy Knowledge Graph / Initializing Boundary Knowledge Graph for: {root_path}...")
     try:
         run_audit(repo_root=root_path, output_format="cli", write_graph=True)
         print("[OK] Codebase indexed successfully. Dependency call graph ready.")
         print("\nNext steps:")
-        print("  1. Run `boundary check` to inspect external dependencies and drift.")
-        print("  2. Run `boundary fix` to autonomously resolve migrations.")
+        print("  1. Run `bergendy see` to inspect external dependencies and drift.")
+        print("  2. Run `bergendy fix` to draft schemas and patch callsites.")
     except Exception as exc:
         print(f"[NOTICE] Initial indexing notice: {exc}")
 

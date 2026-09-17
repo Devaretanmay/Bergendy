@@ -1,41 +1,39 @@
-# Boundary CLI Reference
+# Bergendy CLI Reference
 
-Boundary provides static boundary analysis, automated schema synthesis, and sandboxed replay verification for external network callsites.
+Bergendy provides static callsite analysis, automated schema synthesis, and sandboxed replay verification for external network requests.
 
 ---
 
 ## Command Overview
 
 ```text
-Core Commands:
-  boundary auth                     Configure BYOK AI provider credentials (Groq, OpenAI, Anthropic)
-  boundary doctor                   Check environment, sandbox, compiler, and credential readiness
-  boundary scan [path]              Scan codebase for unvalidated external HTTP callsites
-  boundary resolve [path]           Synthesize schemas from recorded traffic and patch callsites
-  boundary guard                    Pre-commit hook blocking unvalidated external network callsites
-  boundary verify [path]            Run test suite in network-isolated sandbox replaying mock traffic
+The Four Verbs:
+  bergendy see [path]               See what external calls return (unvalidated callsites)
+  bergendy fix [path]               Draft typed schemas + patch callsites + prove in sandbox
+  bergendy prove [path]             Replay recorded traffic in Ghost Proxy sandbox
+  bergendy watch [path]             Pre-commit & CI gate to keep main clean
 
-Diagnostic and Maintenance Commands:
-  boundary check [path]             Audit external dependency graph and contract drift
-  boundary graph [path]             Inspect external dependency callsites and manifest linkages
-  boundary init [path]              Initialize .boundary workspace metadata in current repository
-  boundary app serve                Run GitHub App webhook daemon
+Workflow & Utilities:
+  bergendy init [path]              Initialize .boundary metadata in current repository
+  bergendy status                   Show workspace and repository connection status
+  bergendy auth                     Configure BYOK AI provider (OpenAI, Anthropic, Groq)
+  bergendy doctor                   Verify setup, AI provider, and test runner readiness
 ```
 
 ---
 
 ## 1. Authentication and Environment Setup
 
-### `boundary auth`
+### `bergendy auth`
 Configures credentials for your AI provider (BYOK: Bring Your Own Key).
 
 ```bash
 # Interactive setup
-boundary auth
+bergendy auth
 
 # Check status or clear credentials
-boundary auth --status
-boundary auth --clear
+bergendy auth --status
+bergendy auth --clear
 ```
 
 Supported environment variables:
@@ -47,11 +45,11 @@ Credentials are saved with `0600` file permissions in `~/.boundary/credentials.j
 
 ---
 
-### `boundary doctor`
+### `bergendy doctor`
 Checks operating system environment, compilers, and credential configuration.
 
 ```bash
-boundary doctor
+bergendy doctor
 ```
 
 Verification checks:
@@ -62,17 +60,17 @@ Verification checks:
 
 ---
 
-## 2. Boundary Defense Commands
+## 2. Core Verbs & Workflow
 
-### `boundary scan [path]`
-Performs AST analysis to identify external network boundaries lacking runtime schema validation:
+### `bergendy see [path]` (aliases: `check`, `scan`)
+Performs AST analysis to identify external network requests lacking runtime schema validation:
 
 ```bash
-# Scan repository root
-boundary scan
+# See open calls in repository root
+bergendy see
 
-# Scan a target directory
-boundary scan ./src
+# See open calls in a target directory
+bergendy see ./src
 ```
 
 Supported callsites:
@@ -82,78 +80,56 @@ Supported callsites:
 
 ---
 
-### `boundary resolve [path] [--target <file>]`
-Synthesizes rigid schemas from recorded traffic and patches callsites using native AST rewrites:
+### `bergendy fix [path]`
+Single guided command: drafts typed runtime schemas from live telemetry, patches callsites losslessly, and proves changes in the sandbox.
 
 ```bash
-# Resolve all unvalidated boundaries
-boundary resolve
+# Guided interactive fix across codebase
+bergendy fix
 
-# Resolve a specific file
-boundary resolve --target src/resend.ts
+# Automatically apply and prove
+bergendy fix -y
+```
+
+### `bergendy patch [path] [--target <file>]` (alias: `resolve`)
+Drafts rigid schemas from recorded traffic and patches callsites using native AST rewrites:
+
+```bash
+# Patch all open calls
+bergendy patch
+
+# Patch a specific file
+bergendy patch --target src/resend.ts
 ```
 
 Behavior:
 - **Payload Isolation**: Extracts only `response_body` from telemetry exchanges, discarding transport metadata (`request_method`, `request_headers`).
 - **No-Swallow Verification**: Rejects patches that suppress validation errors silently (`catch { return null }` or `except: pass`). Errors must bubble to application error handlers.
-- **Output Targets**:
-  - TypeScript: `z.object({...})` via Zod.
-  - Python: `BaseModel` classes via Pydantic v2.
-  - Go: Struct definitions with `json:"..."` tags.
+- **Resource Naming**: Emits snake_case file schemas (`stripe_payment_intent.ts`) exporting PascalCase types (`StripePaymentIntentSchema`).
 
 ---
 
-### `boundary gate` (alias: `boundary guard`)
-Pre-commit hook and CI gate that validates staged files:
+### `bergendy watch` (aliases: `gate`, `guard`)
+Pre-commit hook and CI gate that ensures zero open external calls in staged code:
 
 ```bash
 # Install hook to .git/hooks/pre-commit
-boundary gate --install
+bergendy watch --install
 
 # Run check on currently staged files
-boundary gate
+bergendy watch
 
 # Run check on specific files (used by pre-commit framework or CI)
-boundary gate --files src/api.ts src/client.py --ci
+bergendy watch --files src/api.ts src/client.py --ci
 ```
-
-#### Pre-commit Framework Configuration (`.pre-commit-config.yaml`)
-```yaml
-repos:
-  - repo: https://github.com/Devaretanmay/Boundary
-    rev: v1.1.3
-    hooks:
-      - id: boundary-gate
-```
-
-#### GitHub Actions Workflow Example (`.github/workflows/boundary.yml`)
-```yaml
-name: boundary-gate
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Devaretanmay/Boundary@main
-        with:
-          command: gate
-```
-
-- Blocks commits and PRs that introduce unvalidated external HTTP callsites across TypeScript, Python, and Go.
-- Exits 0 when all staged network calls pass validation.
 
 ---
 
-### `boundary verify [path]`
-Executes the native test suite inside a network-isolated sandbox with mock proxy replay:
+### `bergendy prove [path]` (alias: `verify`)
+Executes the native test suite inside a network-isolated sandbox with Ghost Proxy replay:
 
 ```bash
-boundary verify
+bergendy prove
 ```
 
 - Public internet access is blocked at the OS kernel level.

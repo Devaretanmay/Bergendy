@@ -84,24 +84,24 @@ def cmd_scan(args: Any) -> None:
                 "status": "Unvalidated response payload",
             })
 
-    total_boundaries = max(len(callsites) + len(runtime_findings), len(unprotected))
-    if total_boundaries > 0:
-        coverage = int(((total_boundaries - len(unprotected)) / total_boundaries) * 100)
+    total_calls = max(len(callsites) + len(runtime_findings), len(unprotected))
+    if total_calls > 0:
+        coverage = int(((total_calls - len(unprotected)) / total_calls) * 100)
     else:
         coverage = 100
 
-    print(f"Analyzed:    {total_files} files, {total_boundaries} network boundaries")
-    print(f"Coverage:    {coverage}% ({len(unprotected)} unprotected boundaries)")
+    print(f"Analyzed:    {total_files} files, {total_calls} external calls")
+    print(f"Locked:      {coverage}% ({len(unprotected)} open calls)")
     print()
 
     if unprotected:
-        print(f"{yellow('Unprotected Boundaries (Requires Action)')}\n")
+        print(f"{yellow('Open Calls: Unprotected Boundaries (Requires Action)')}\n")
         for u in unprotected:
             loc = f"{u['file']}:{u['line']}:{u['col']}"
             print(f"  {bold(loc)}")
             print(f"  ├─ Endpoint: {dim(u['endpoint'])}")
             print(f"  ├─ Status:   {yellow(u['status'])}")
-            action_cmd = f"boundary resolve --target {u['file']}"
+            action_cmd = f"bergendy fix --target {u['file']}"
             print(f"  └─ Action:   Run `{cyan(action_cmd)}`\n")
 
     exchanges_file = os.path.join(workdir, ".boundary", "knowledge", "exchanges.jsonl")
@@ -126,18 +126,18 @@ def cmd_scan(args: Any) -> None:
             print(f"  {bold(d['endpoint'])}")
             print(f"  ├─ Status:   {yellow(d['status'])}")
             print(f"  ├─ Shapes:   {d['variations']} distinct structural variations observed")
-            print(f"  └─ Action:   Run `{cyan('boundary resolve --drift')}`\n")
+            print(f"  └─ Action:   Run `{cyan('bergendy fix --drift')}`\n")
 
     if unprotected or drift_items:
-        print(f"Run `{cyan('boundary resolve')}` to automatically generate schemas and patch callsites.")
+        print(f"Run `{cyan('bergendy fix')}` to automatically draft schemas and patch callsites.")
     else:
-        print(f"{green('All network boundaries verified and validated.')}")
+        print(f"{green('All external calls are locked to schemas.')}")
 def cmd_resolve(args: Any) -> None:
     """Execute autonomous schema synthesis, AST callsite patching, and isolated verification."""
     workdir = os.path.abspath(getattr(args, "path", ".") or ".")
     target_file = getattr(args, "target", None)
 
-    print(header("Resolving Unprotected Boundaries"))
+    print(header("Drafting Schemas & Patching Callsites (Resolving Unprotected Boundaries)"))
 
     exchanges_file = os.path.join(workdir, ".boundary", "knowledge", "exchanges.jsonl")
     exchange_count = 0
@@ -222,13 +222,13 @@ def cmd_resolve(args: Any) -> None:
         else:
             print(f"  {yellow('[INFO]')} test executed with exit code {proc.returncode}\n")
 
-    print(f"{green('Resolution Complete')}")
+    print(f"{green('Patch Complete (Resolution Complete)')}")
     print(f"  ├─ Schemas generated: {schemas_count}")
     print(f"  ├─ Files patched:     {files_count}")
     print(f"  └─ Sandboxed verify:  {green('Passed')}\n")
-    print(f"Changes staged. Run `{cyan('git commit')}` or `{cyan('boundary verify')}` to confirm.")
+    print(f"Changes staged. Run `{cyan('git commit')}` or `{cyan('bergendy prove')}` to confirm.")
 def cmd_guard(args: Any) -> None:
-    """Pre-commit hook interceptor: blocks commits containing unvalidated network boundaries."""
+    """Pre-commit hook interceptor: blocks commits containing open external calls."""
     workdir = os.path.abspath(getattr(args, "path", ".") or ".")
 
     if getattr(args, "install", False):
@@ -238,8 +238,8 @@ def cmd_guard(args: Any) -> None:
         hook_path = os.path.join(hooks_dir, "pre-commit")
         hook_content = (
             "#!/bin/sh\n"
-            "# Boundary Pre-commit Gate\n"
-            "boundary gate || exit 1\n"
+            "# Bergendy Pre-commit Gate\n"
+            "bergendy watch || boundary gate || exit 1\n"
         )
         with open(hook_path, "w", encoding="utf-8") as f:
             f.write(hook_content)
@@ -331,11 +331,11 @@ def cmd_guard(args: Any) -> None:
             print(f"  File:  {bold(loc)}")
             print(f"  Issue: {v['issue']}\n")
         print("  Automated remediation is available.")
-        print(f"  Run `{cyan('boundary resolve')}` to synthesize schemas before committing.\n")
+        print(f"  Run `{cyan('bergendy fix')}` to synthesize schemas before committing.\n")
         sys.exit(1)
     else:
         if getattr(args, "verbose", False) or getattr(args, "ci", False):
-            print(f"{green('boundary gate:')} Staged changes verified. Zero unprotected network boundaries.")
+            print(f"{green('bergendy watch:')} Staged changes verified. Zero open calls (Zero unprotected network boundaries).")
         sys.exit(0)
 def cmd_verify(args: Any) -> None:
     """Execute isolated sandbox verification replaying captured telemetry."""
@@ -363,7 +363,7 @@ def run_guided_fix(workdir: str, assume_yes: bool = False) -> None:
     """Guided single-command remediation flow: scan, synthesize, diff, verify."""
     workdir = os.path.abspath(workdir or ".")
 
-    print(bold("Scanning codebase for unvalidated external boundaries..."))
+    print(bold("Scanning codebase for open external calls..."))
 
     scan_res = scan_callsites(workdir)
     callsites = scan_res.get("callsites", [])
@@ -410,18 +410,17 @@ def run_guided_fix(workdir: str, assume_yes: bool = False) -> None:
                 "endpoint": rf.get("url", "/api"),
             })
 
-    total_boundaries = max(len(callsites) + len(runtime_findings), len(unprotected))
+    total_calls = max(len(callsites) + len(runtime_findings), len(unprotected))
     score = max(0, 100 - len(unprotected) * 15)
-    grade = "Protected" if score >= 90 else "Exposed" if score >= 40 else "Unprotected"
 
-    print(f"   Analyzed {total_files} files, {total_boundaries} network boundaries.")
-    print(f"   Boundary Score: {score}/100 ({grade})\n")
+    print(f"   Analyzed {total_files} files, {total_calls} external calls.")
+    print(f"   Lock Status: {score}% ({len(unprotected)} open calls)\n")
 
     if not unprotected:
-        print(green("All network boundaries are validated. No action required."))
+        print(green("All external calls are locked to schemas. No action required."))
         return
 
-    print(bold(f"Unvalidated Boundaries Found ({len(unprotected)}):"))
+    print(bold(f"Open Calls Found ({len(unprotected)}):"))
     for idx, u in enumerate(unprotected, start=1):
         loc = f"{u['file']}:{u['line']}"
         print(f"   {idx}. {u['endpoint']:<28} ({loc})")
@@ -429,7 +428,7 @@ def run_guided_fix(workdir: str, assume_yes: bool = False) -> None:
 
     if not assume_yes:
         try:
-            choice = input(bold(f"Fix these {len(unprotected)} boundaries? [Y/n]: ")).strip().lower()
+            choice = input(bold(f"Draft schemas and patch these {len(unprotected)} calls? [Y/n]: ")).strip().lower()
             if choice not in ("", "y", "yes"):
                 print(yellow("Aborted. No changes were made."))
                 return
@@ -438,7 +437,7 @@ def run_guided_fix(workdir: str, assume_yes: bool = False) -> None:
             return
 
     # Synthesize schemas and patch callsites
-    print(bold("\nExtracting telemetry and synthesizing runtime schemas..."))
+    print(bold("\nExtracting live traffic telemetry and drafting schemas..."))
     exchanges_file = os.path.join(workdir, ".boundary", "knowledge", "exchanges.jsonl")
     exchange_count = 0
     if os.path.isfile(exchanges_file):
@@ -499,7 +498,7 @@ def run_guided_fix(workdir: str, assume_yes: bool = False) -> None:
             return
 
     # Run isolated sandbox verification
-    print(bold("\nRunning Isolated Verification..."))
+    print(bold("\nRunning Sandbox Replay (Ghost Proxy)..."))
     proxy_url = os.environ.get("BOUNDARY_MOCK_PROXY", "127.0.0.1:54321")
     print(f"   [OK] Ghost Proxy active on {proxy_url}")
     print("   [OK] Outbound network traffic restricted")
@@ -510,8 +509,8 @@ def run_guided_fix(workdir: str, assume_yes: bool = False) -> None:
         proc = _run_tests(workdir, test_cmd, timeout=120, env={})
         if proc.returncode == 0:
             print(f"   [OK] Test suite passed: `{test_cmd}`")
-            print(green("\nVerification Complete."))
-            print("   Zero blast radius. All schemas parse verified payloads.")
+            print(green("\nProof Complete."))
+            print("   Zero blast radius. All schemas parse verified replay payloads.")
             print("   Changes ready in working tree.")
         else:
             print(yellow(f"\nVerification finished with exit code {proc.returncode}."))

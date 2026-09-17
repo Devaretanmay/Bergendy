@@ -1152,7 +1152,7 @@ def run_hunt(
         return HuntReport(success=False, finding_id=finding_ref, provider="",
                           version_from="", version_to="", repository_path=repo_dir,
                           commit_sha="", iterations=0, audit_path=audit_path,
-                          reason=f"Unknown finding '{finding_ref}'. Run `boundary check` to list findings.")
+                          reason=f"Unknown finding '{finding_ref}'. Run `bergendy see` (or `boundary check`) to list findings.")
 
     _refusal_sha = _git(repo_dir, "rev-parse", "HEAD")
 
@@ -1164,7 +1164,7 @@ def run_hunt(
                           version_to=finding.version_to, repository_path=repo_dir,
                           commit_sha=_refusal_sha, iterations=0, audit_path=audit_path,
                           reason=("AI repair required but no AI provider is configured. "
-                                  "Run `boundary auth` first."))
+                                  "Run `bergendy auth` (or `boundary auth`) first."))
 
     cfg = resolve_llm_config(api_key=llm_api_key, model=llm_model, base_url=llm_base_url)
     if cfg is None or AIPatchPlanner is None:
@@ -1175,7 +1175,7 @@ def run_hunt(
                           version_to=finding.version_to, repository_path=repo_dir,
                           commit_sha=_refusal_sha, iterations=0, audit_path=audit_path,
                           reason=("AI repair required but no AI provider is configured. "
-                                  "Run `boundary auth` first."))
+                                  "Run `bergendy auth` (or `boundary auth`) first."))
 
     client = LLMClient(cfg)
     planner = AIPatchPlanner(client=client)

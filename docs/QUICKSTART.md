@@ -1,15 +1,15 @@
-# Boundary Quickstart Guide
+# Bergendy Quickstart Guide
 
-Get up and running with Boundary runtime boundary defense in under two minutes.
+Get up and running with Bergendy runtime schema synthesis and sandboxed proof in under two minutes.
 
 ---
 
 ## 1. Installation
 
-Install Boundary from PyPI:
+Install Bergendy from PyPI:
 
 ```bash
-pip install boundary
+pip install bergendy
 ```
 
 Or build from source:
@@ -24,14 +24,14 @@ maturin develop --release
 
 ## 2. Authentication (BYOK)
 
-Configure your preferred AI provider (Groq, OpenAI, or Anthropic):
+Configure your preferred AI provider (OpenAI, Anthropic, or Groq):
 
 ```bash
 # Interactive setup
-boundary auth
+bergendy auth
 
 # Or set via environment variables:
-export GROQ_API_KEY="your-api-key"
+export ANTHROPIC_API_KEY="your-api-key"
 # or
 export OPENAI_API_KEY="your-api-key"
 ```
@@ -39,100 +39,96 @@ export OPENAI_API_KEY="your-api-key"
 Verify your environment:
 
 ```bash
-boundary doctor
+bergendy doctor
 ```
 
 Example output:
 ```text
 System Readiness Check
   [OK] Sandbox environment: macOS sandbox-exec supported
-  [OK] AI provider: Groq (openai/gpt-oss-120b)
-  [OK] Mock Proxy: Ready (127.0.0.1:54321)
+  [OK] AI provider: Anthropic (claude-3-5-sonnet-20241022)
+  [OK] Ghost Proxy: Ready (127.0.0.1:54321)
   [OK] Compilers detected: python3, node, go
 ```
 
 ---
 
-## 3. Step-by-Step Workflow
+## 3. The Four Verbs Workflow
 
-### Step 1: Scan for Unvalidated Boundaries
-Scan your repository for external HTTP callsites lacking runtime schema validation:
+### 1. See: Find Open External Calls
+Scan your repository for external HTTP requests lacking runtime schema validation:
 
 ```bash
-boundary scan
+bergendy see
 ```
 
 Example output:
 ```text
-Scanning runtime boundaries in .
-  [EXPOSED] src/resend.ts:116 -> https://api.resend.com/emails (no schema validation)
-  [EXPOSED] weather.py:12 -> https://api.weatherapi.com/v1/current.json (untyped dict access)
-  [EXPOSED] tools/auth/gitee.go:106 -> https://gitee.com/api/v5/emails (unchecked struct unmarshal)
+Open Calls (Unvalidated External Requests)
+  src/resend.ts:116:1
+  ├─ Endpoint: https://api.resend.com/emails
+  ├─ Status:   Unvalidated response payload
+  └─ Action:   Run `bergendy fix --target src/resend.ts`
 
-Scan Summary:
-  Files Scanned:          42
-  Exposed Boundaries:     3
-  Auto-Resolvable:        3
+  weather.py:12:1
+  ├─ Endpoint: https://api.weatherapi.com/v1/current.json
+  ├─ Status:   Unvalidated response payload
+  └─ Action:   Run `bergendy fix --target weather.py`
 ```
 
 ---
 
-### Step 2: Resolve Unvalidated Boundaries
-Synthesize rigid schemas from captured runtime traffic and patch callsites:
+### 2. Fix: Draft Schemas and Patch Callsites
+Run the guided interactive flow to draft schemas from captured traffic, patch callsites losslessly, and prove changes:
 
 ```bash
-# Resolve all detected boundaries:
-boundary resolve
-
-# Or target a specific file:
-boundary resolve --target src/resend.ts
+# Guided single command:
+bergendy fix
 ```
 
-What Boundary does:
+What Bergendy does:
 1. **Extracts traffic telemetry**: Reads captured HTTP spans from `.boundary/knowledge/exchanges.jsonl`.
 2. **Isolates payload context**: Extracts solely `response_body`, stripping transport wrappers (`request_method`, `request_headers`).
-3. **Synthesizes typed schema**:
-   - TypeScript: Strict **Zod** schema (`z.object({...})`).
-   - Python: Strict **Pydantic** model (`class Schema(BaseModel):`).
+3. **Drafts typed schema**:
+   - TypeScript: Strict **Zod** schema (`z.object({...})`). Named by resource: `snake_case` file (`resend_email.ts`) exporting PascalCase (`ResendEmailSchema`).
+   - Python: Strict **Pydantic** model (`class ResendEmailSchema(BaseModel):`).
    - Go: Typed **Go struct** with json tags.
 4. **Patches callsite**: Injects validation (`.parse()`, `model_validate()`) verified with the **No-Swallow Rule** (rejects silent `try/catch` or `except: pass` error suppressors).
-5. **Replays against Mock Proxy**: Verifies the patched code inside an isolated sandbox.
+5. **Proves against Ghost Proxy**: Replays the captured traffic inside an isolated sandbox.
 
 ---
 
-### Step 3: Verify in Hermetic Sandbox
+### 3. Prove: Replay in Ghost Proxy Sandbox
 Run verification tests inside a network-blocked sandbox where external calls are replayed locally:
 
 ```bash
-boundary verify
+bergendy prove
 ```
 
 Output:
 ```text
-Verification Environment (Sandbox)
-  ├─ Network:   Isolated (Mock Proxy active on 127.0.0.1:54321)
-  ├─ Replaying: 3 captured HTTP exchanges
-  └─ Executing: `npm test`
+Running Sandbox Replay (Ghost Proxy)...
+   [OK] Ghost Proxy active on 127.0.0.1:54321
+   [OK] Outbound network traffic restricted
+   [OK] Replaying 3 captured API exchanges
+   [OK] Test suite passed: `npm test`
 
-  [PASS] verification tests passed
-
-Resolution Complete
-  ├─ Schemas generated: 1
-  ├─ Files patched:     1
-  └─ Sandboxed verify:  Passed
+Proof Complete.
+   Zero blast radius. All schemas parse verified replay payloads.
+   Changes ready in working tree.
 ```
 
 ---
 
-### Step 4: Pre-Commit Gate
-Add Boundary to your pre-commit workflow:
+### 4. Watch: Pre-Commit & CI Gate
+Enforce that zero open external calls enter your git history:
 
 ```bash
 # Install git hook
-boundary gate --install
+bergendy watch --install
 
-# Test manually
-boundary gate
+# Test staged changes manually
+bergendy watch
 ```
 
-If any staged file contains an unchecked external HTTP call, Boundary halts the commit and points directly to the exposed line.
+If any staged file contains an unchecked external HTTP call, Bergendy halts the commit and points directly to the open callsite.

@@ -1,18 +1,18 @@
-# Boundary Python & Engine API Reference
+# Bergendy Python & Engine API Reference
 
 **Version:** 1.1.3  
-**Package:** `boundary` (PyPI)
+**Package:** `bergendy` (PyPI, with `boundary` backward-compatibility alias)
 
 ---
 
 ## 1. Documentation Index
 
 - **[Quickstart Guide](QUICKSTART.md)**: 2-minute quickstart guide for CLI and Python workflows.
-- **[CLI Reference Guide](CLI.md)**: Complete guide to the public CLI commands (`scan`, `resolve`, `gate`, `verify`, `auth`, `doctor`).
-- **[Mock Proxy & Sandbox Replay](GHOST_PROXY.md)**: Local interception proxy for deterministic replay of captured HTTP exchanges in hermetic sandboxes.
+- **[CLI Reference Guide](CLI.md)**: Complete guide to the Four Verbs (`see`, `fix`, `prove`, `watch`) and utilities.
+- **[Ghost Proxy & Sandbox Replay](GHOST_PROXY.md)**: Local interception proxy for deterministic replay of captured HTTP exchanges in hermetic sandboxes.
 - **[Evidence Capture & Context Bounding](COMPRESSION.md)**: High-signal test failure extraction and token budget bounding.
 - **[TypeScript & Node.js SDK](TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
-- **[Use Cases & Working Examples](USE_CASES.md)**: Practical security scenarios, prompt injection defense, and REPL sandboxing patterns.
+- **[Use Cases & Working Examples](USE_CASES.md)**: Practical scenarios, runtime schema lock, and sandboxing patterns.
 
 ---
 
