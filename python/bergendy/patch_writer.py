@@ -5,8 +5,8 @@ import os
 import re
 from dataclasses import dataclass, field
 
-from boundary.autopatch import ScanConfig, scan_callsites
-from boundary.providers.registry import RewriteRule
+from bergendy.autopatch import ScanConfig, scan_callsites
+from bergendy.providers.registry import RewriteRule
 
 
 @dataclass

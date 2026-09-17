@@ -678,8 +678,8 @@ def test_sandbox_port_roundtrip(tmp_path):
     finally:
         provider.destroy(repo, box)
     assert not os.path.exists(box.sandbox_dir)
-    assert create_sandbox.__module__ == "boundary.hunt"
-    assert destroy_sandbox.__module__ == "boundary.hunt"
+    assert create_sandbox.__module__ in ("boundary.hunt", "bergendy.hunt")
+    assert destroy_sandbox.__module__ in ("boundary.hunt", "bergendy.hunt")
 
 
 def test_sandbox_binding_refuses_moved_repo(tmp_path):

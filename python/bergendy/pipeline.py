@@ -27,10 +27,10 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, List
 
-from boundary.config import PipelinePolicy
-from boundary.github.client import GitHubAppClient
-from boundary.credentials import has_valid_credentials
-from boundary.github.pr_render import (
+from bergendy.config import PipelinePolicy
+from bergendy.github.client import GitHubAppClient
+from bergendy.credentials import has_valid_credentials
+from bergendy.github.pr_render import (
     render_consult_issue,
     render_flow_diagram,
     render_maintenance_issue_comment,
@@ -38,25 +38,25 @@ from boundary.github.pr_render import (
     render_pr_summary,
     render_verification_comment,
 )
-from boundary.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
-from boundary.autopatch import (
+from bergendy.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
+from bergendy.autopatch import (
     ScanConfig,
     scan_callsites,
 )
-from boundary.providers.registry import get_default_registry, ProviderSpec
-from boundary.drift import detect_drift
-from boundary.formatters import run_style_formatter
-from boundary.test_runner import (
+from bergendy.providers.registry import get_default_registry, ProviderSpec
+from bergendy.drift import detect_drift
+from bergendy.formatters import run_style_formatter
+from bergendy.test_runner import (
     _detect_test_command,
     _run_tests,
     _compute_lockfile_hash,
 )
 from blake3 import blake3
-from boundary.intelligence import BoundaryIntelligence, resolve_migration
-from boundary.knowledge import upsert_learned as kb_upsert
-from boundary.ai_planner import AIPatchPlanner, build_reasoning_context
-from boundary.maintenance_agents import analyze_impact
-from boundary.sandbox.snapshot import SnapshotManager
+from bergendy.intelligence import BoundaryIntelligence, resolve_migration
+from bergendy.knowledge import upsert_learned as kb_upsert
+from bergendy.ai_planner import AIPatchPlanner, build_reasoning_context
+from bergendy.maintenance_agents import analyze_impact
+from bergendy.sandbox.snapshot import SnapshotManager
 
 _logger = logging.getLogger("boundary.pipeline")
 

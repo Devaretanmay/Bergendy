@@ -23,7 +23,7 @@ from .task_profile import classify as classify_profile
 try:
     from bergendy._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
 except ImportError:
-    from boundary._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
+    from bergendy._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
 
 
 _logger = logging.getLogger("boundary.box")

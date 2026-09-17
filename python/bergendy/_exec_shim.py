@@ -6,7 +6,7 @@ Usage (from a .boundary/bin/<agent> shim):
 
 import argparse
 import sys
-from boundary.cli.main import cmd_exec_shim
+from bergendy.cli.main import cmd_exec_shim
 
 
 if __name__ == "__main__":

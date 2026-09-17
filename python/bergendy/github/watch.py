@@ -15,13 +15,13 @@ import logging
 import os
 from typing import Any
 
-from boundary import cross_repo
-from boundary.config import PipelinePolicy
-from boundary.drift import detect_changes
-from boundary.github.client import GitHubAppClient
-from boundary.github.installations import REPO_INDEXED, REPO_READY, save_installation, store_dir
-from boundary.github.provisioning import ensure_repo_checkout
-from boundary.pipeline import MaintenancePipeline, TriggerContext
+from bergendy import cross_repo
+from bergendy.config import PipelinePolicy
+from bergendy.drift import detect_changes
+from bergendy.github.client import GitHubAppClient
+from bergendy.github.installations import REPO_INDEXED, REPO_READY, save_installation, store_dir
+from bergendy.github.provisioning import ensure_repo_checkout
+from bergendy.pipeline import MaintenancePipeline, TriggerContext
 
 _logger = logging.getLogger("boundary.watch")
 

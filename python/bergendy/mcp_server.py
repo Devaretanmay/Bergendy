@@ -15,10 +15,10 @@ import os
 import sys
 from typing import Any
 
-from boundary.audit import render_audit_cli
-from boundary.graph import audit_dependency_graph, build_dependency_graph
-from boundary.maintenance import detect_drift, run_maintenance_cycle
-from boundary.providers.registry import get_default_registry
+from bergendy.audit import render_audit_cli
+from bergendy.graph import audit_dependency_graph, build_dependency_graph
+from bergendy.maintenance import detect_drift, run_maintenance_cycle
+from bergendy.providers.registry import get_default_registry
 
 
 TOOLS: list[dict[str, Any]] = [

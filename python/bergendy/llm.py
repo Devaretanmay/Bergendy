@@ -6,8 +6,8 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
-from boundary.credentials import load_credentials
-from boundary.redact import redact_secrets
+from bergendy.credentials import load_credentials
+from bergendy.redact import redact_secrets
 
 
 @dataclass

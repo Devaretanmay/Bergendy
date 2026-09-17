@@ -18,7 +18,7 @@ import time
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List
 
-from boundary.providers.registry import RewriteRule
+from bergendy.providers.registry import RewriteRule
 
 import blake3
 

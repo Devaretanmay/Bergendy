@@ -20,25 +20,25 @@ import os
 import subprocess
 from typing import Any, Callable, Dict
 
-from boundary.ai_planner import AIPatchPlanner as AIPatchPlanner
-from boundary.github.client import GitHubAppClient
-from boundary.pipeline import (
+from bergendy.ai_planner import AIPatchPlanner as AIPatchPlanner
+from bergendy.github.client import GitHubAppClient
+from bergendy.pipeline import (
     MaintenancePipeline,
     PipelinePolicy,
     TriggerContext,
 )
-from boundary.repo_identity import STATE_ACTIVE, set_bot_state
-from boundary.audit import run_audit
-from boundary.github.howl_bot import HowlBot
-from boundary.github.hunt_bot import HuntBot
-from boundary.github.installations import (
+from bergendy.repo_identity import STATE_ACTIVE, set_bot_state
+from bergendy.audit import run_audit
+from bergendy.github.howl_bot import HowlBot
+from bergendy.github.hunt_bot import HuntBot
+from bergendy.github.installations import (
     REPO_INDEXED, REPO_PENDING, REPO_READY, record_installation_event, set_repo_state,
 )
-from boundary.github.provisioning import resolve_pr_workdir
-from boundary.graph import build_dependency_graph
-from boundary.drift import detect_drift
-from boundary import cross_repo, work_graph
-from boundary.github.push_events import parse_push_payload
+from bergendy.github.provisioning import resolve_pr_workdir
+from bergendy.graph import build_dependency_graph
+from bergendy.drift import detect_drift
+from bergendy import cross_repo, work_graph
+from bergendy.github.push_events import parse_push_payload
 
 _logger = logging.getLogger("boundary.pr_bot")
 

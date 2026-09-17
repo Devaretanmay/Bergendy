@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from boundary.pipeline import AnalysisResult, DriftFinding, TriggerContext
-    from boundary.github.client import GitHubAppClient
+    from bergendy.pipeline import AnalysisResult, DriftFinding, TriggerContext
+    from bergendy.github.client import GitHubAppClient
 
 
 def render_verification_comment(

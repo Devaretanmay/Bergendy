@@ -1,4 +1,4 @@
-from boundary.cli.enterprise_commands import cmd_resolve, cmd_guard, cmd_verify, run_guided_fix
+from bergendy.cli.enterprise_commands import cmd_resolve, cmd_guard, cmd_verify, run_guided_fix
 import argparse
 import dataclasses
 import graphlib
@@ -16,14 +16,14 @@ import urllib.request
 from typing import List
 import yaml
 
-from boundary.hooks.base import SandboxRunner, diff_trees, index_workdir
-from boundary.sandbox.snapshot import SnapshotManager
-from boundary.engine.session import SessionManager, SessionStatus
-from boundary.engine.lane import LaneManager, LaneStatus
-from boundary.engine.integration import IntegrationEngine
-from boundary.engine.execution import Execution, ExecutionManager, ExecutionKind, ExecutionStatus
-from boundary.engine.pty_supervisor import PtySupervisor
-from boundary.config import (
+from bergendy.hooks.base import SandboxRunner, diff_trees, index_workdir
+from bergendy.sandbox.snapshot import SnapshotManager
+from bergendy.engine.session import SessionManager, SessionStatus
+from bergendy.engine.lane import LaneManager, LaneStatus
+from bergendy.engine.integration import IntegrationEngine
+from bergendy.engine.execution import Execution, ExecutionManager, ExecutionKind, ExecutionStatus
+from bergendy.engine.pty_supervisor import PtySupervisor
+from bergendy.config import (
     CompartmentConfig,
     WorkflowConfig,
     WorkflowNodeConfig,
@@ -31,44 +31,44 @@ from boundary.config import (
     load_config,
     find_workspace_root,
 )
-from boundary import hunt as hunt_agent
-from boundary.runtime_scan import boundary_score, scan_runtime_boundaries
+from bergendy import hunt as hunt_agent
+from bergendy.runtime_scan import boundary_score, scan_runtime_boundaries
 import json as _json
-from boundary.audit import require_structural_evidence
-from boundary.runtime_scan import render_score
-from boundary import shield as _shield
-from boundary.contracts import status as _cstatus
-from boundary.capture import cmd_dev as _dev
+from bergendy.audit import require_structural_evidence
+from bergendy.runtime_scan import render_score
+from bergendy import shield as _shield
+from bergendy.contracts import status as _cstatus
+from bergendy.capture import cmd_dev as _dev
 import dataclasses as _dc
-from boundary.hunt import decide_pr, gather_context, resolve_finding
-from boundary import autopatch
-from boundary.audit import changed_since_index, run_audit
-from boundary.drift import detect_changes, detect_drift
-from boundary.graph import audit_dependency_graph, build_dependency_graph
-from boundary.github.installations import list_ready_repos, store_dir as installations_store_dir
-from boundary.github.webhook_server import WebhookServer
-from boundary.intelligence import resolve_migration
-from boundary.knowledge import ensure_test_recipe
-from boundary.maintenance import get_migration_history, run_maintenance_cycle
-from boundary.providers.registry import get_default_registry
-from boundary.test_runner import _detect_test_command
+from bergendy.hunt import decide_pr, gather_context, resolve_finding
+from bergendy import autopatch
+from bergendy.audit import changed_since_index, run_audit
+from bergendy.drift import detect_changes, detect_drift
+from bergendy.graph import audit_dependency_graph, build_dependency_graph
+from bergendy.github.installations import list_ready_repos, store_dir as installations_store_dir
+from bergendy.github.webhook_server import WebhookServer
+from bergendy.intelligence import resolve_migration
+from bergendy.knowledge import ensure_test_recipe
+from bergendy.maintenance import get_migration_history, run_maintenance_cycle
+from bergendy.providers.registry import get_default_registry
+from bergendy.test_runner import _detect_test_command
 import getpass
-from boundary.ai_planner import AIPatchPlanner, build_reasoning_context
-from boundary.change_source import NO_IMPACT
-from boundary.credentials import (
+from bergendy.ai_planner import AIPatchPlanner, build_reasoning_context
+from bergendy.change_source import NO_IMPACT
+from bergendy.credentials import (
     has_valid_credentials,
     save_credentials,
     get_active_provider_summary,
     verify_credentials,
     clear_credentials,
 )
-from boundary.github.pr_render import render_consult_issue
-from boundary.github.client import GitHubAppClient
-from boundary.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
-from boundary.github.provisioning import workdir_for_event
-from boundary.github.watch import watch_once
-from boundary.mcp_server import serve_stdio
-from boundary.repo_identity import (
+from bergendy.github.pr_render import render_consult_issue
+from bergendy.github.client import GitHubAppClient
+from bergendy.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
+from bergendy.github.provisioning import workdir_for_event
+from bergendy.github.watch import watch_once
+from bergendy.mcp_server import serve_stdio
+from bergendy.repo_identity import (
     STATE_AVAILABLE,
     clear_active_repo,
     derive_repository_key,
@@ -2869,7 +2869,7 @@ def main():
         aliases=["fix", "maintain", "update", "hunt", "@hunt"],
         help="Work mode (Hunt): repair from a finding id or provider, sandbox-verify, deliver PR",
     )
-    work_p.add_argument("root_dir", nargs="?", default=".", help="Finding id (from boundary check) or codebase directory")
+    work_p.add_argument("root_dir", nargs="?", default=".", help="Finding id (from bergendy check) or codebase directory")
     work_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
     work_p.add_argument("--from", dest="from_version", default=None, help="Current dependency version")
     work_p.add_argument("--to", dest="to_version", default=None, help="Target dependency version")
@@ -2881,7 +2881,7 @@ def main():
     work_p.add_argument("--model", default=None, help="BYOK LLM model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
     work_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     work_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
-    work_p.add_argument("--finding", default=None, help="Hunt finding id from boundary check (e.g. stripe-a1b2c3)")
+    work_p.add_argument("--finding", default=None, help="Hunt finding id from bergendy check (e.g. stripe-a1b2c3)")
     work_p.add_argument("--issue", default=None, help="GitHub issue number backing the finding")
     work_p.add_argument("--yes", action="store_true", help="Auto-approve PR creation after verified repair")
     work_p.add_argument("--max-iterations", type=int, default=3, help="Max AI-directed repair iterations (default: 3)")

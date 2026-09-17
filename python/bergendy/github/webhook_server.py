@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict
 
 from .client import verify_webhook_signature
 
-from boundary.github.dashboard import render_dashboard
+from bergendy.github.dashboard import render_dashboard
 
 _logger = logging.getLogger("boundary.github.webhook_server")
 

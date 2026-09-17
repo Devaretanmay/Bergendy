@@ -8,7 +8,7 @@ import html
 import time
 from typing import Any, Dict, List
 
-from boundary import work_graph
+from bergendy import work_graph
 
 
 def _esc(value: Any) -> str:

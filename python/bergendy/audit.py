@@ -9,7 +9,7 @@ import subprocess
 import time
 from typing import Any, Dict
 
-from boundary.graph import audit_dependency_graph, build_dependency_graph
+from bergendy.graph import audit_dependency_graph, build_dependency_graph
 
 
 def _strip_strings_and_comments(line: str) -> str:

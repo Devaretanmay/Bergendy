@@ -8,21 +8,21 @@ import subprocess
 import time
 from typing import Any
 
-from boundary.ai_planner import AIPatchPlanner, build_reasoning_context
-from boundary.drift import detect_drift  # noqa: F401
-from boundary.formatters import run_style_formatter
-from boundary.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
-from boundary.git_ops import git_commit_and_push, gh_create_pr
-from boundary.maintenance_agents import analyze_impact
-from boundary.patch_writer import (
+from bergendy.ai_planner import AIPatchPlanner, build_reasoning_context
+from bergendy.drift import detect_drift  # noqa: F401
+from bergendy.formatters import run_style_formatter
+from bergendy.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
+from bergendy.git_ops import git_commit_and_push, gh_create_pr
+from bergendy.maintenance_agents import analyze_impact
+from bergendy.patch_writer import (
     discover_aliases, instantiate_alias_rules, PatchResult,
 )
-from boundary.providers.registry import get_default_registry
-from boundary.sandbox.snapshot import SnapshotManager, _file_hash
+from bergendy.providers.registry import get_default_registry
+from bergendy.sandbox.snapshot import SnapshotManager, _file_hash
 
-from boundary.intelligence import BoundaryIntelligence, resolve_migration
-from boundary.knowledge import direct_rewrites_for, record_failure, upsert_learned as kb_upsert
-from boundary.test_runner import (
+from bergendy.intelligence import BoundaryIntelligence, resolve_migration
+from bergendy.knowledge import direct_rewrites_for, record_failure, upsert_learned as kb_upsert
+from bergendy.test_runner import (
     _detect_test_command,
     _compute_lockfile_hash,
     _run_install,

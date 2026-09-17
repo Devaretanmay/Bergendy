@@ -20,17 +20,17 @@ import subprocess
 import time as _time
 from typing import Any, Dict, List, Optional
 
-from boundary import work_graph
-from boundary.ai_planner import AIPatchPlanner, build_reasoning_context
-from boundary.audit import is_code_evidence
-from boundary.autopatch import ScanConfig, scan_callsites
-from boundary.git_ops import git_commit_and_push
-from boundary.github.installations import store_dir as installations_store_dir
-from boundary.github.provisioning import cached_path, ensure_branch_checkout
-from boundary.knowledge import record_failure
-from boundary.repo_identity import STATE_ACTIVE, get_repository
-from boundary.sandbox.snapshot import SnapshotManager
-from boundary.test_runner import _detect_test_command, _run_tests
+from bergendy import work_graph
+from bergendy.ai_planner import AIPatchPlanner, build_reasoning_context
+from bergendy.audit import is_code_evidence
+from bergendy.autopatch import ScanConfig, scan_callsites
+from bergendy.git_ops import git_commit_and_push
+from bergendy.github.installations import store_dir as installations_store_dir
+from bergendy.github.provisioning import cached_path, ensure_branch_checkout
+from bergendy.knowledge import record_failure
+from bergendy.repo_identity import STATE_ACTIVE, get_repository
+from bergendy.sandbox.snapshot import SnapshotManager
+from bergendy.test_runner import _detect_test_command, _run_tests
 
 _logger = logging.getLogger("boundary.cross_repo")
 

@@ -12,10 +12,10 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from boundary.change_source import ChangeSource
-from boundary.credentials import has_valid_credentials
-from boundary.knowledge import _norm_version, direct_rewrites_for
-from boundary.providers.registry import find_migration_for, get_default_registry
+from bergendy.change_source import ChangeSource
+from bergendy.credentials import has_valid_credentials
+from bergendy.knowledge import _norm_version, direct_rewrites_for
+from bergendy.providers.registry import find_migration_for, get_default_registry
 
 
 @dataclass

@@ -47,12 +47,12 @@ try:
 except ImportError:  # pragma: no cover - non-POSIX platforms only
     fcntl = None  # type: ignore
 
-from boundary.change_source import IMPACT_AI, IMPACT_QUARANTINE
-from boundary.credentials import has_valid_credentials
-from boundary.drift import detect_changes
-from boundary.git_ops import gh_create_pr, git_commit_and_push
-from boundary.github.trust_pr import TrustPRMetadata, generate_trust_pr_markdown
-from boundary.hunt_ports import (
+from bergendy.change_source import IMPACT_AI, IMPACT_QUARANTINE
+from bergendy.credentials import has_valid_credentials
+from bergendy.drift import detect_changes
+from bergendy.git_ops import gh_create_pr, git_commit_and_push
+from bergendy.github.trust_pr import TrustPRMetadata, generate_trust_pr_markdown
+from bergendy.hunt_ports import (
     AIAuthoredPatch,
     HuntPorts,
     PRPublisher,
@@ -63,20 +63,20 @@ from boundary.hunt_ports import (
     seal_ai_patch,
     seal_verified_repair,
 )
-from boundary.github.client import GitHubAppClient
+from bergendy.github.client import GitHubAppClient
 import urllib.request
-from boundary import cross_repo as _xr
-from boundary.config import load_config
+from bergendy import cross_repo as _xr
+from bergendy.config import load_config
 from blake3 import blake3 as _blake3
 from urllib.parse import urlparse
 import json as _json
-from boundary import _core
-from boundary.knowledge import lookup as kb_lookup
-from boundary.knowledge import record_failure
-from boundary.redact import redact_record
-from boundary.llm import LLMClient, resolve_llm_config
-from boundary.sandbox.snapshot import SnapshotManager
-from boundary.test_runner import (
+from bergendy import _core
+from bergendy.knowledge import lookup as kb_lookup
+from bergendy.knowledge import record_failure
+from bergendy.redact import redact_record
+from bergendy.llm import LLMClient, resolve_llm_config
+from bergendy.sandbox.snapshot import SnapshotManager
+from bergendy.test_runner import (
     _compute_lockfile_hash,
     _detect_test_command,
     _run_install,
@@ -84,29 +84,29 @@ from boundary.test_runner import (
 )
 
 try:
-    from boundary.ai_planner import AIPatchPlanner, build_reasoning_context
+    from bergendy.ai_planner import AIPatchPlanner, build_reasoning_context
 except Exception:  # pragma: no cover - planner unavailable without LLM deps
     AIPatchPlanner = None  # type: ignore
     build_reasoning_context = None  # type: ignore
 
 try:
-    from boundary.autopatch import ScanConfig, scan_callsites
+    from bergendy.autopatch import ScanConfig, scan_callsites
 except Exception:  # pragma: no cover
     ScanConfig = None  # type: ignore
     scan_callsites = None  # type: ignore
 
 try:
-    from boundary.graph import build_dependency_graph
+    from bergendy.graph import build_dependency_graph
 except Exception:  # pragma: no cover
     build_dependency_graph = None  # type: ignore
 
 try:
-    from boundary import work_graph
+    from bergendy import work_graph
 except Exception:  # pragma: no cover
     work_graph = None  # type: ignore
 
 try:
-    from boundary.intelligence import resolve_migration
+    from bergendy.intelligence import resolve_migration
 except Exception:  # pragma: no cover
     resolve_migration = None  # type: ignore
 

@@ -7,15 +7,15 @@ from .formatters import bold, cyan, dim, green, header, red, yellow
 try:
     from bergendy import _core
 except ImportError:
-    from boundary import _core
+    from bergendy import _core
 
-from boundary.autopatch import scan_callsites
-from boundary.hunt import repair_unvalidated_boundary
-from boundary.runtime_scan import scan_runtime_boundaries
-from boundary.test_runner import _detect_test_command, _run_tests
+from bergendy.autopatch import scan_callsites
+from bergendy.hunt import repair_unvalidated_boundary
+from bergendy.runtime_scan import scan_runtime_boundaries
+from bergendy.test_runner import _detect_test_command, _run_tests
 
 
-from boundary.llm import resolve_llm_config, LLMClient
+from bergendy.llm import resolve_llm_config, LLMClient
 
 def cmd_scan(args: Any) -> None:
     """Execute high-signal codebase audit of network boundaries and contract drift."""
@@ -277,7 +277,7 @@ def cmd_guard(args: Any) -> None:
         except Exception:
             staged_files = []
 
-    from boundary.runtime_scan import TS_EXTS, PY_EXTS, GO_EXTS, TS_CALL, PY_CALL, GO_CALL, PARSE_GUARD, ANY_CAST
+    from bergendy.runtime_scan import TS_EXTS, PY_EXTS, GO_EXTS, TS_CALL, PY_CALL, GO_CALL, PARSE_GUARD, ANY_CAST
 
     violations = []
     for rel_path in staged_files:

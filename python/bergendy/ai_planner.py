@@ -14,12 +14,12 @@ import os
 import re
 from typing import Any, Dict, List
 
-from boundary.graph import build_dependency_graph
-from boundary.autopatch import ScanConfig, scan_callsites
-from boundary.knowledge import lookup as kb_lookup
-from boundary.llm import LLMClient, resolve_llm_config
-from boundary.patch_writer import PatchResult
-from boundary.test_runner import _detect_test_command
+from bergendy.graph import build_dependency_graph
+from bergendy.autopatch import ScanConfig, scan_callsites
+from bergendy.knowledge import lookup as kb_lookup
+from bergendy.llm import LLMClient, resolve_llm_config
+from bergendy.patch_writer import PatchResult
+from bergendy.test_runner import _detect_test_command
 
 
 _BLOCK_REGEX = re.compile(

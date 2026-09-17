@@ -6,14 +6,14 @@ import logging
 import os
 import re
 from typing import Any
-from boundary.autopatch import ScanConfig, scan_callsites
-from boundary.change_source import (
+from bergendy.autopatch import ScanConfig, scan_callsites
+from bergendy.change_source import (
     Detection, ChangeSource, NO_IMPACT, IMPACT_AI, IMPACT_QUARANTINE,
 )
-from boundary.credentials import has_valid_credentials
-from boundary.intelligence import resolve_migration
-from boundary.knowledge import direct_rewrites_for
-from boundary.providers.registry import get_default_registry
+from bergendy.credentials import has_valid_credentials
+from bergendy.intelligence import resolve_migration
+from bergendy.knowledge import direct_rewrites_for
+from bergendy.providers.registry import get_default_registry
 
 _logger = logging.getLogger("boundary.drift")
 

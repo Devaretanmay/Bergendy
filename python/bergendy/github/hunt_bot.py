@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from boundary.github.client import GitHubAppClient
-from boundary.pipeline import (
+from bergendy.github.client import GitHubAppClient
+from bergendy.pipeline import (
     MaintenancePipeline,
     PipelinePolicy,
     PipelineResult,

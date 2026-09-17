@@ -16,11 +16,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from boundary.ai_planner import AIPatchPlanner, build_reasoning_context
-from boundary.credentials import has_valid_credentials
-from boundary.github.client import GitHubAppClient
-from boundary.github.pr_render import render_consult_issue, render_flow_diagram
-from boundary.pipeline import (
+from bergendy.ai_planner import AIPatchPlanner, build_reasoning_context
+from bergendy.credentials import has_valid_credentials
+from bergendy.github.client import GitHubAppClient
+from bergendy.github.pr_render import render_consult_issue, render_flow_diagram
+from bergendy.pipeline import (
     AnalysisResult,
     PipelinePolicy,
     TriggerContext,

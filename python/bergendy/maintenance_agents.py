@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from boundary.change_source import ChangeSource
-from boundary.graph import build_dependency_graph
+from bergendy.change_source import ChangeSource
+from bergendy.graph import build_dependency_graph
 
 
 @dataclass

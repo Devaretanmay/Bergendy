@@ -7,7 +7,7 @@ from typing import Any
 try:
     from bergendy._core import dependency_graph_build, dependency_graph_audit
 except ImportError:
-    from boundary._core import dependency_graph_build, dependency_graph_audit
+    from bergendy._core import dependency_graph_build, dependency_graph_audit
 
 
 

@@ -14,10 +14,10 @@ import os
 import subprocess
 from typing import Any
 
-from boundary.contracts import approve, record_shape, top_shapes
+from bergendy.contracts import approve, record_shape, top_shapes
 
-from boundary.runtime_scan import scan_runtime_boundaries
-from boundary.llm import LLMClient, resolve_llm_config
+from bergendy.runtime_scan import scan_runtime_boundaries
+from bergendy.llm import LLMClient, resolve_llm_config
 
 HOOK_BODY = """#!/bin/sh
 # Boundary Shield (managed by `boundary shield --on`). Fail-closed.

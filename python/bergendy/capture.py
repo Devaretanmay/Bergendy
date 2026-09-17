@@ -20,10 +20,10 @@ import tempfile
 import threading
 from typing import Any
 
-from boundary.contracts import check_drift, record_shape
+from bergendy.contracts import check_drift, record_shape
 
 
-from boundary.contracts import status as _status
+from bergendy.contracts import status as _status
 
 def handle_frame(repo_root: str, frame: dict[str, Any]) -> None:
     endpoint = str(frame.get("endpoint") or "unknown").strip() or "unknown"
