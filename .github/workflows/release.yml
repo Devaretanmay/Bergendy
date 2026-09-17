@@ -37,14 +37,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p staging
-          cp target/${{ matrix.target }}/release/libboundary_core.* staging/ 2>/dev/null || true
-          tar -czvf boundary-${{ matrix.target }}.tar.gz -C staging .
+          cp target/${{ matrix.target }}/release/libbergendy_core.* staging/ 2>/dev/null || cp target/${{ matrix.target }}/release/libboundary_core.* staging/ 2>/dev/null || true
+          tar -czvf bergendy-${{ matrix.target }}.tar.gz -C staging .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: boundary-${{ matrix.target }}
-          path: boundary-${{ matrix.target }}.tar.gz
+          name: bergendy-${{ matrix.target }}
+          path: bergendy-${{ matrix.target }}.tar.gz
 
   publish-release:
     needs: [build-binaries]

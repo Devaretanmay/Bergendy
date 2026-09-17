@@ -16,6 +16,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: pip install ruff maturin pytest pyyaml blake3 "pyjwt[crypto]>=2.8.0"
       - run: maturin build --release --out dist
+      - run: pip install dist/*.whl --force-reinstall
       - run: python -c "import bergendy._core as c, shutil, os; shutil.copy(c.__file__, 'python/bergendy/'); shutil.copy(c.__file__, 'python/boundary/') if os.path.exists('python/boundary') else None"
       - run: python scripts/run_all_tests.py
 
