@@ -6,6 +6,11 @@ All notable changes to Bergendy are documented here.
 
 ### Added
 - Rename release to **Bergendy** (`bergendy` on PyPI).
+- **Hybrid AST + AI Architecture**:
+  - Rust AST Context Extractor (`src/engines/context_extractor.rs`) capturing precise function signatures, callsite coordinates, data-flow nodes, error handling patterns, and existing imports.
+  - Rust 6-Point AST Verifier (`src/engines/ast_verifier.rs`) executing deterministic safety checks (syntactic balance, schema wiring, No-Swallow rule, blast radius preservation, import correctness, naming conventions).
+  - Structured 3-block transformation prompt format (`python/bergendy/prompts/transformation.txt`).
+  - Reflection retry loop with AST feedback in `python/bergendy/hunt.py` (`ai_generate_patch`).
 - Zero-token deterministic schema synthesis fallback when offline or lacking LLM API keys.
 - Next.js auto-instrumentation injection on `bergendy init`.
 - Root `--version` flag (`bergendy --version`).

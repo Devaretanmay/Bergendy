@@ -59,7 +59,9 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ## 3. External-Change Intelligence & AutoPatch APIs
 
-### `from boundary import autopatch`
+> *Note: All modules can be imported as either `from bergendy.<module>` or `from boundary.<module>` (backward-compatibility alias).*
+
+### `from bergendy import autopatch` (or `from boundary import autopatch`)
 - `plan_maintenance(old_spec: str, new_spec: str, repo_root: str = ".", config: ScanConfig = None) -> MaintenancePlan`: Generates breaking-change diff, scans callsites, and computes patch targets as evidence for AI reasoning.
 - `synthesize_contracts(api_name: str, old_ver: str, new_ver: str, specs: List[VerificationSpec], lang: str = "ts") -> str`: Synthesizes Vitest/pytest contract test suites.
 
@@ -131,20 +133,40 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ## 5. Hunt Autonomous Repair
 
-Hunt starts from a `boundary check` finding ID and runs the full
+Hunt starts from a `bergendy see` finding ID and runs the full
 reasoning → repair → sandbox → verification lifecycle. AI authors every
 semantic change; deterministic code provides evidence and execution only.
 
-### `from boundary.hunt import run_hunt, list_findings, resolve_finding`
+### `from bergendy.hunt import run_hunt, list_findings, resolve_finding`
 - `list_findings(repo_dir) -> List[HuntFinding]`: live re-detection; IDs derive from repo-relative paths so spellings (`/tmp/x` vs `/private/tmp/x`) resolve identically.
 - `resolve_finding(repo_dir, ref)`: accepts a finding ID, provider name, or `issue:<n>` reference. Stored IDs are hints; context is always rebuilt live.
 - `run_hunt(repo_dir, finding_ref, create_pr=False, github_repo=None, auto_approve_pr=False, max_iterations=3, ports=None, lock_timeout_s=120.0) -> HuntReport`: bounded AI-directed iterations; fails closed with no PR unless a sealed repair verifies green and scope-clean. One Hunt per repository at a time (repo-level lock); concurrent attempts serialize or refuse loudly.
 
-### `from boundary.hunt_ports import AIAuthoredPatch, VerifiedRepair, seal_ai_patch, seal_verified_repair, HuntPorts`
+### `from bergendy.hunt_ports import AIAuthoredPatch, VerifiedRepair, seal_ai_patch, seal_verified_repair, HuntPorts`
 - `AIAuthoredPatch` (frozen, sealed): constructible only via `seal_ai_patch()`; carries `author="ai"`, model identity, diff, and admission provenance.
 - `VerifiedRepair` (frozen capability token): mintable only via `seal_verified_repair()`, which derives acceptance from sealed patches, real command + exit 0, convinced interpretation, and its own scope evaluation. `decide_pr` / `PRPublisher.publish` accept nothing else.
 - `HuntPorts`: `ContextProvider / RepairReasoner / PatchAuthor / SandboxProvider / Verifier / RepairInterpreter / PRPublisher` protocols. Future extensions implement protocols; the loop never imports concrete repair modules.
 
-### `from boundary.redact import redact_secrets, redact_record`
+### `from bergendy.redact import redact_secrets, redact_record`
 - Heuristic scrubbing of provider keys, tokens, and private-key blocks before LLM submission and audit persistence. Precision over recall; extend centrally, never per-callsite.
+
+---
+
+## 6. Hybrid AST + AI Architecture Engine APIs
+
+Bergendy exposes native Rust AST extractors and verifiers to Python via `bergendy._core`:
+
+### `from bergendy._core import extract_precise_context`
+- `extract_precise_context(source_code: str, file_path: str, target_line: int, endpoint: str, samples_json: str, lang: str) -> str`:
+  Extracts precise AST context JSON containing `function_signature`, `enclosing_function_code`, `callsite_code`, `data_flow`, `error_handling`, `existing_imports`, and filtered `traffic_samples`.
+
+### `from bergendy._core import ast_verify`
+- `ast_verify(original_function: str, ai_patch: str, ai_schema: str, import_stmt: str, context_json: str) -> str`:
+  Executes the 6 deterministic safety checks against candidate AI patches. Returns JSON result with `syntactically_valid`, `schema_wired`, `no_silent_catch`, `blast_radius_clean`, `imports_correct`, `naming_valid`, and detailed `error_messages`.
+
+### `from bergendy.hunt import ai_generate_patch, repair_unvalidated_boundary`
+- `ai_generate_patch(context_dict: dict, client, max_retries: int = 3) -> Optional[dict]`:
+  Prompts the configured AI provider using `transformation.txt` with compiler AST feedback on retry. Returns verified schema, patch, and import blocks.
+- `repair_unvalidated_boundary(repo_dir: str, endpoint: str, callsite_file: str, schema_name: str = None, client = None) -> dict`:
+  Orchestrates the complete repair pipeline: extracts AST context, invokes AI patch generation with verification, and gracefully falls back to deterministic AST rewriting when offline.
 

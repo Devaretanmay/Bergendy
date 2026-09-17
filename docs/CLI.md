@@ -103,9 +103,11 @@ bergendy patch --target src/resend.ts
 ```
 
 Behavior:
+- **AST Context Extraction**: Extracts function signature, callsite coordinates, data flow, and error handling pattern.
 - **Payload Isolation**: Extracts only `response_body` from telemetry exchanges, discarding transport metadata (`request_method`, `request_headers`).
-- **No-Swallow Verification**: Rejects patches that suppress validation errors silently (`catch { return null }` or `except: pass`). Errors must bubble to application error handlers.
-- **Resource Naming**: Emits snake_case file schemas (`stripe_payment_intent.ts`) exporting PascalCase types (`StripePaymentIntentSchema`).
+- **6-Point AST Verification**: Rejects patches that violate syntactic balance, fail to wire the schema, suppress errors silently (No-Swallow Rule), exceed blast radius, corrupt imports, or violate resource naming conventions.
+- **Self-Repair Retry Loop**: In case of verification failure, feeds deterministic compiler diagnostics back into the AI model for up to 3 reflection attempts before falling back to the zero-token deterministic rewriter.
+- **Resource Naming**: Emits `snake_case` file schemas (`stripe_payment_intent.ts`) exporting `PascalCase` types (`StripePaymentIntentSchema`).
 
 ---
 

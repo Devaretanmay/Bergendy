@@ -135,13 +135,15 @@ bergendy watch
 
 ## Architecture
 
-Bergendy combines a native Rust engine for AST transformations and kernel sandboxing with Python for orchestration and schema synthesis:
+Bergendy combines a high-performance native Rust engine for AST transformations and kernel sandboxing with Python for orchestration and schema synthesis:
 
-- **`src/engines/rewriter.rs`**: AST-driven callsite rewriter injecting schema imports and validation calls.
+- **`src/engines/context_extractor.rs`**: AST-driven callsite context extractor (function signature, enclosing body, data flow, error handling pattern, existing imports).
+- **`src/engines/ast_verifier.rs`**: 6-point deterministic AST safety verifier (syntactic balance, schema wiring, No-Swallow rule, blast radius clean, imports correct, naming conventions).
+- **`src/engines/rewriter.rs`**: Polyglot AST-driven callsite rewriter injecting schema imports and validation calls.
 - **`src/engines/graph/`**: Dependency graph mapping external providers, manifests, and AST callsites.
 - **`src/sandbox/`**: OS-level network and filesystem isolation (macOS Seatbelt, Linux Landlock).
 - **`src/ghost_proxy/server.rs`**: Local Axum-based mock HTTP server serving recorded exchanges in hermetic sandboxes.
-- **`python/bergendy/hunt.py`**: Schema synthesis loop with payload isolation and No-Swallow AST verifier.
+- **`python/bergendy/hunt.py`**: Schema synthesis loop with payload isolation, AI reflection retry loop, and deterministic fallback.
 - **`sdk/typescript/instrument.js`**: Node.js and fetch shim redirecting sandboxed traffic to the mock proxy.
 
 ---

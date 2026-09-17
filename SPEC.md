@@ -2,7 +2,7 @@
 
 Version: 0.1 (draft)
 Status: open for comment
-Maintainer: Boundary Labs
+Maintainer: Bergendy Labs
 
 ## Why this exists
 
