@@ -2627,21 +2627,19 @@ def main():
         sys.exit(_launch_agent(agent_name, ws_root, user_argv=user_argv))
 
     description = textwrap.dedent("""\
-        Boundary: Autonomous External-Change Intelligence & Controlled Execution
+        Bergendy: Runtime schemas, drafted from your live traffic.
 
-        Core Commands:
-          boundary auth                     Connect & configure BYOK AI provider (OpenAI, Anthropic, Groq, etc.)
-          boundary connect [owner/repo]     Connect GitHub account, choose repository, and issue Repository Key
-          boundary active [owner/repo]      Show or switch the active repository working context
-          boundary status                   Show current workspace and repository connection status
-          boundary @howl [path]             Howl (Consult): AI reasoning, file GitHub Issue, touch zero code
-          boundary @hunt [path]             Hunt (Work): autonomous AI repair, sandbox-verify, deliver PR
-          boundary disconnect [owner/repo]  Disconnect repository registration and clear active working context
+        The Four Verbs:
+          bergendy see [path]               See what external calls return (unvalidated boundaries)
+          bergendy fix [path]               Draft typed schemas + patch callsites + prove in sandbox
+          bergendy prove [path]             Replay recorded traffic in Ghost Proxy sandbox
+          bergendy watch [path]             Pre-commit & CI gate to keep main clean
 
-        Diagnostic & Utilities:
-          boundary doctor                   Verify GitHub App, AI provider, indexing, and test runner readiness
-          boundary init [path]              Initialize .boundary workspace metadata in current repository
-          boundary app serve                Run autonomous GitHub App webhook daemon
+        Workflow & Utilities:
+          bergendy init [path]              Initialize .boundary metadata in current repository
+          bergendy status                   Show current workspace and repository connection status
+          bergendy auth                     Configure BYOK AI provider (OpenAI, Anthropic, Groq)
+          bergendy doctor                   Verify setup, AI provider, and test runner readiness
     """)
 
     parser = argparse.ArgumentParser(
@@ -2666,14 +2664,18 @@ def main():
     init_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
 
     subparsers.add_parser("status", help="Show workspace status: agents, lanes, security events")
-    p_resolve = subparsers.add_parser("resolve", help="Resolve unvalidated boundaries")
+    p_resolve = subparsers.add_parser(
+        "resolve",
+        aliases=["patch"],
+        help="Draft schemas and patch unvalidated callsites",
+    )
     p_resolve.add_argument("path", nargs="?", default=".", help="Target repository directory")
     p_resolve.add_argument("--target", default="", help="Specific file to resolve")
 
     p_gate = subparsers.add_parser(
-        "gate",
-        aliases=["guard"],
-        help="Pre-commit and CI gate blocking unvalidated network boundaries",
+        "watch",
+        aliases=["gate", "guard"],
+        help="Keep main clean: pre-commit and CI gate for open calls",
     )
     p_gate.add_argument("path", nargs="?", default=".", help="Target repository directory")
     p_gate.add_argument("--install", action="store_true", help="Install pre-commit hook")
@@ -2682,9 +2684,14 @@ def main():
     p_gate.add_argument("--strict", action="store_true", help="Strict enforcement mode")
     p_gate.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
-    p_verify = subparsers.add_parser("verify", help="Execute isolated sandbox verification replaying captured telemetry")
+    p_verify = subparsers.add_parser(
+        "prove",
+        aliases=["verify"],
+        help="Replay recorded traffic inside Ghost Proxy sandbox",
+    )
     p_verify.add_argument("path", nargs="?", default=".", help="Target repository directory")
     p_verify.add_argument("--contract-only", action="store_true", help="Run contract verification tests only")
+
 
     subparsers.add_parser("doctor", help="Blueprint readiness: auth + indexed + test command")
 
@@ -2848,20 +2855,14 @@ def main():
     explain_p = subparsers.add_parser("explain", help="Explain why Boundary classified a finding as affected, unaffected, or unresolved")
     explain_p.add_argument("finding_id", help="Finding or pattern identifier")
 
-    check_p = subparsers.add_parser("check", help="Scan repository for external API integrations and breaking drift")
+    check_p = subparsers.add_parser(
+        "see",
+        aliases=["check", "scan", "audit"],
+        help="See what external calls return (unvalidated boundaries and shape drift)",
+    )
     check_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     check_p.add_argument("--format", default="cli", choices=["cli", "github-issue", "issue", "markdown", "md", "json"], help="Output format (default: cli)")
     check_p.add_argument("--write-graph", action="store_true", help="Persist .boundary/graph.json")
-
-    scan_p = subparsers.add_parser("scan", help="Alias for check")
-    scan_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
-    scan_p.add_argument("--format", default="cli", choices=["cli", "github-issue", "issue", "markdown", "md", "json"], help="Output format (default: cli)")
-    scan_p.add_argument("--write-graph", action="store_true", help="Persist .boundary/graph.json")
-
-    audit_p = subparsers.add_parser("audit", help="Alias for check")
-    audit_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
-    audit_p.add_argument("--format", default="cli", choices=["cli", "github-issue", "issue", "markdown", "md", "json"], help="Output format (default: cli)")
-    audit_p.add_argument("--write-graph", action="store_true", help="Persist .boundary/graph.json")
 
     work_p = subparsers.add_parser(
         "work",
@@ -2987,8 +2988,12 @@ def main():
         "auth": cmd_auth,
         "status": cmd_status,
         "resolve": cmd_resolve,
+        "patch": cmd_resolve,
+        "see": cmd_check,
+        "watch": cmd_guard,
         "gate": cmd_guard,
         "guard": cmd_guard,
+        "prove": cmd_verify,
         "verify": cmd_verify,
         "doctor": cmd_doctor,
         "inspect": cmd_inspect,

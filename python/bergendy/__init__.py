@@ -16,9 +16,13 @@ from . import github as github
 
 from importlib.metadata import version as _package_version
 try:
-    __version__ = _package_version("boundary")
+    __version__ = _package_version("bergendy")
 except Exception:
-    __version__ = "0.0.0-dev"
+    try:
+        __version__ = _package_version("boundary")
+    except Exception:
+        __version__ = "1.1.3"
+
 
 __all__ = [
     "Boundary",

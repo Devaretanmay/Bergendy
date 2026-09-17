@@ -4,7 +4,11 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from boundary._core import dependency_graph_build, dependency_graph_audit
+try:
+    from bergendy._core import dependency_graph_build, dependency_graph_audit
+except ImportError:
+    from boundary._core import dependency_graph_build, dependency_graph_audit
+
 
 
 def build_dependency_graph(repo_root: str = ".") -> dict[str, Any]:

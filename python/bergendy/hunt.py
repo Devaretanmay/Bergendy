@@ -1896,18 +1896,20 @@ def _ai_human_schema_name(client, endpoint: str, samples: list[dict]) -> tuple[s
             "Naming Step (before writing the schema).\n"
             f"Endpoint: {endpoint}\n"
             f"Response keys seen: {', '.join(keys[:12]) or 'unknown'}\n"
-            "Derive a SHORT human-like name from endpoint intent + response shape, NOT a URL slug.\n"
-            "Rules: file = snake_case, 2-4 words, max 40 chars "
-            "(e.g. resend_email_response). Export = PascalCase ending in Schema "
-            "(e.g. ResendEmailResponseSchema). NEVER emit URL slugs like "
-            "https___api_... Reply JSON ONLY: "
+            "Derive a SHORT human-like name from endpoint resource + intent, NOT a URL slug.\n"
+            "Rules:\n"
+            "- File name: snake_case based on the resource (e.g. stripe_payment_intent, weather_forecast, resend_email).\n"
+            "- Export name: PascalCase ending in Schema (e.g. StripePaymentIntentSchema, WeatherForecastSchema, ResendEmailSchema).\n"
+            "- Never use raw URLs or HTTP methods in file or export names.\n"
+            "Reply JSON ONLY: "
             '{"file": "...", "export": "..."}'
         )
         resp = client.complete(
             messages=[{"role": "user", "content": prompt}],
             system_prompt=(
-                "You name runtime schemas like a senior engineer. "
-                "Short, intent-revealing names only. Reply JSON only."
+                "You name runtime schemas after the resource, like a senior engineer. "
+                "File name: snake_case based on the resource. Export name: PascalCase ending in Schema. "
+                "Never use raw URLs in file or export names. Reply JSON only."
             ),
         )
         txt = (resp.content or "").strip()
@@ -1966,11 +1968,11 @@ def generate_schema_for_traffic(client, endpoint: str, clustered_samples: list[d
         "3. NEVER use `any` or loosely typed primitives if a rigid type exists.\n"
         "4. Output ONLY the raw code definition. No markdown block, no explanation, no markdown ticks.\n"
         f"5. You MUST name the root class/type EXACTLY this string: {schema_name}\n"
-        "6. Naming Step (human-like, already decided): this export name was derived from "
-        "endpoint intent + response shape, NOT a URL slug. Keep it exactly as given. "
-        "NEVER rename it to a URL slug like https___api_... or HttpsApiCloudflare.... "
-        "The file import must look hand-written, e.g. "
-        "import { ResendEmailResponseSchema } from '@/schemas/resend_email_response';\n"
+        "6. File name: snake_case based on the resource (e.g. stripe_payment_intent.ts).\n"
+        "   Export name: PascalCase ending in Schema (e.g. StripePaymentIntentSchema).\n"
+        "   Never use raw URLs or HTTP methods in file or export names.\n"
+        "   The import must look hand-written, e.g. "
+        "import { StripePaymentIntentSchema } from '@/schemas/stripe_payment_intent';\n"
     )
     if lang == "python":
         system_prompt += "6. Use Python Pydantic (import BaseModel from pydantic). Define the class."

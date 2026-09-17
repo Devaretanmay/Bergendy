@@ -20,7 +20,11 @@ from .proxy import CredentialProxy, RouteConfig
 from .snapshot import SnapshotManager
 from .task_profile import classify as classify_profile
 
-from boundary._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
+try:
+    from bergendy._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
+except ImportError:
+    from boundary._core import sandbox_apply as _core_sandbox_apply, sandbox_check_supported as _core_sandbox_check_supported
+
 
 _logger = logging.getLogger("boundary.box")
 

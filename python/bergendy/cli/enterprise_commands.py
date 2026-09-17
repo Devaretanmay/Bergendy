@@ -4,7 +4,11 @@ import subprocess
 import sys
 from typing import Any
 from .formatters import bold, cyan, dim, green, header, red, yellow
-from boundary import _core
+try:
+    from bergendy import _core
+except ImportError:
+    from boundary import _core
+
 from boundary.autopatch import scan_callsites
 from boundary.hunt import repair_unvalidated_boundary
 from boundary.runtime_scan import scan_runtime_boundaries
