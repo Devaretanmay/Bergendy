@@ -1,0 +1,76 @@
+You are an expert compiler engineer rewriting a network callsite to add runtime schema validation.
+
+## PRECISE CONTEXT (from AST analysis)
+
+File: {file}
+Language: {language}
+Validation Library: {validation_library}
+Function Signature: {function_signature}
+
+Function Code:
+```{language}
+{enclosing_function_code}
+```
+
+Callsite (line {line}, column {column}):
+```{language}
+{callsite_code}
+```
+
+Data Flow Path:
+{data_flow_formatted}
+
+Error Handling: {error_handling_description}
+
+Existing Imports:
+{existing_imports_formatted}
+
+## LIVE TRAFFIC SAMPLES (response_body only, transport metadata stripped)
+
+Observed {traffic_sample_count} API responses. Here are {traffic_samples_len} unique sample variations:
+
+{traffic_samples_formatted}
+
+## TASK
+
+1. Generate a {validation_library} schema that validates the response payload.
+   - Name it after the resource (e.g. StripePaymentIntentSchema, ResendEmailSchema), not the URL.
+   - File name: snake_case (e.g. stripe_payment_intent.ts)
+   - Export name: PascalCase ending in "Schema" (e.g. StripePaymentIntentSchema)
+   - Infer rigid types from traffic samples:
+     * Strings that look like UUIDs/IDs -> z.string() or z.string().uuid()
+     * Enums/statuses -> z.enum([...])
+     * Nested structures -> z.object({...}) or Pydantic models
+   - Do NOT include transport metadata (request_method, headers, status)
+
+2. Rewrite the callsite function to use the schema.
+   - Inject validation at the exact point where the response is consumed.
+   - For TypeScript/Zod: const data = SchemaName.parse(await res.json()) or .then(d => SchemaName.parse(d))
+   - For Python/Pydantic: data = SchemaName.model_validate(res.json())
+   - Respect the existing error handling pattern.
+   - CRITICAL (No-Swallow Rule): Do NOT wrap validation in a silent try/catch or except: pass.
+   - Do NOT reformat existing code or modify lines outside the enclosing function.
+
+3. Add the necessary import statement.
+
+## OUTPUT FORMAT
+
+Output exactly three blocks, no explanations, no chat, no conversational filler:
+
+```schema
+[the complete schema file content]
+```
+
+```patch
+[the modified enclosing function, complete and self-contained]
+```
+
+```import
+[the import statement to add, one line]
+```
+
+## CONSTRAINTS
+- Do NOT modify any line outside the enclosing function.
+- Do NOT add a silent catch/except that swallows validation errors.
+- Do NOT reformat existing code or change indentation.
+- Output ONLY the three code blocks above.

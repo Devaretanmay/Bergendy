@@ -154,6 +154,51 @@ fn ast_polyglot_rewrite(
         .map_err(|e| PyValueError::new_err(e))
 }
 
+#[pyfunction]
+fn extract_precise_context(
+    source_code: &str,
+    file_path: &str,
+    target_line: usize,
+    endpoint: &str,
+    samples_json: &str,
+    lang: &str,
+) -> PyResult<String> {
+    let samples: Vec<serde_json::Value> = if samples_json.is_empty() || samples_json == "[]" {
+        Vec::new()
+    } else {
+        serde_json::from_str(samples_json).unwrap_or_default()
+    };
+    let ctx = crate::engines::context_extractor::extract_precise_context(
+        source_code,
+        file_path,
+        target_line,
+        endpoint,
+        &samples,
+        lang,
+    );
+    ctx.to_json().map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+#[pyfunction]
+fn ast_verify(
+    original_function: &str,
+    ai_patch: &str,
+    ai_schema: &str,
+    import_stmt: &str,
+    context_json: &str,
+) -> PyResult<String> {
+    let ctx: crate::engines::context_extractor::PreciseContext =
+        serde_json::from_str(context_json).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let res = crate::engines::ast_verifier::ast_verify(
+        original_function,
+        ai_patch,
+        ai_schema,
+        import_stmt,
+        &ctx,
+    );
+    res.to_json().map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sandbox_apply, m)?)?;
@@ -170,5 +215,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(dependency_graph_build, m)?)?;
     m.add_function(wrap_pyfunction!(dependency_graph_audit, m)?)?;
     m.add_function(wrap_pyfunction!(ast_polyglot_rewrite, m)?)?;
+    m.add_function(wrap_pyfunction!(extract_precise_context, m)?)?;
+    m.add_function(wrap_pyfunction!(ast_verify, m)?)?;
     Ok(())
 }

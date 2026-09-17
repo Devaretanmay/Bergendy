@@ -1826,7 +1826,119 @@ __all__ = [
     "update_audit",
     "AIPlannerAuthor",
     "LocalGitHubPublisher",
+    "ai_generate_patch",
 ]
+
+def _parse_code_block(text: str, tag: str) -> str:
+    start_tag = f"```{tag}"
+    if start_tag not in text:
+        return ""
+    parts = text.split(start_tag, 1)
+    if len(parts) < 2:
+        return ""
+    rest = parts[1]
+    if "```" not in rest:
+        return rest.strip()
+    return rest.split("```", 1)[0].strip()
+
+
+def ai_generate_patch(
+    context_dict: dict,
+    client,
+    max_retries: int = 3,
+) -> dict | None:
+    """Generate schema, patch, and import using AI with deterministic AST verification."""
+    if not client:
+        return None
+
+    prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "transformation.txt")
+    template = ""
+    if os.path.exists(prompt_path):
+        try:
+            with open(prompt_path, "r", encoding="utf-8") as pf:
+                template = pf.read()
+        except Exception:
+            pass
+
+    if not template:
+        return None
+
+    data_flow_nodes = context_dict.get("data_flow", [])
+    data_flow_str = "\n".join(f"- line {n.get('line', '?')}: {n.get('code', '')}" for n in data_flow_nodes) if data_flow_nodes else "None detected"
+    err_pat = context_dict.get("error_handling", {})
+    err_str = err_pat.get("type", "None") if isinstance(err_pat, dict) else "None"
+    imports_list = context_dict.get("existing_imports", [])
+    imports_str = "\n".join(imports_list) if imports_list else "None"
+    samples_data = context_dict.get("traffic_samples", [])
+    samples_str = json.dumps(samples_data, indent=2)[:4000]
+
+    replacements = {
+        "file": str(context_dict.get("file", "")),
+        "language": str(context_dict.get("language", "")),
+        "validation_library": str(context_dict.get("validation_library", "")),
+        "function_signature": str(context_dict.get("function_signature", "")),
+        "enclosing_function_code": str(context_dict.get("enclosing_function_code", "")),
+        "line": str(context_dict.get("line", 1)),
+        "column": str(context_dict.get("column", 1)),
+        "callsite_code": str(context_dict.get("callsite_code", "")),
+        "data_flow_formatted": data_flow_str,
+        "error_handling_description": err_str,
+        "existing_imports_formatted": imports_str,
+        "traffic_sample_count": str(context_dict.get("traffic_sample_count", 0)),
+        "traffic_samples_len": str(len(samples_data)),
+        "traffic_samples_formatted": samples_str,
+    }
+    prompt = template
+    for k, v in replacements.items():
+        prompt = prompt.replace("{" + k + "}", v)
+
+    context_json = json.dumps(context_dict)
+    feedback_notes = []
+
+    for attempt in range(max_retries):
+        cur_prompt = prompt
+        if feedback_notes:
+            cur_prompt += "\n\n## PREVIOUS ATTEMPT FAILED AST VERIFICATION:\n" + "\n".join(f"- {fb}" for fb in feedback_notes)
+            cur_prompt += "\nFix the above issues and output valid schema, patch, and import blocks."
+
+        try:
+            resp = client.complete(
+                messages=[{"role": "user", "content": cur_prompt}],
+                system_prompt="You are an expert compiler engineer. Output only the requested code blocks with zero conversational filler."
+            )
+            content = resp.content if hasattr(resp, "content") else str(resp)
+        except Exception:
+            break
+
+        schema_code = _parse_code_block(content, "schema")
+        patch_code = _parse_code_block(content, "patch")
+        import_code = _parse_code_block(content, "import")
+
+        if not schema_code or not patch_code:
+            feedback_notes = ["Output was missing ```schema or ```patch code blocks."]
+            continue
+
+        orig_fn = context_dict.get("enclosing_function_code", "")
+        ver_res = {"syntactically_valid": True, "error_messages": []}
+        try:
+            if hasattr(_core, "ast_verify"):
+                ver_raw = _core.ast_verify(orig_fn, patch_code, schema_code, import_code, context_json)
+                ver_res = json.loads(ver_raw)
+        except Exception:
+            pass
+
+        if ver_res.get("syntactically_valid") and ver_res.get("no_silent_catch") and ver_res.get("schema_wired"):
+            return {
+                "schema": schema_code,
+                "patch": patch_code,
+                "import": import_code,
+                "verification": ver_res,
+            }
+        else:
+            errs = ver_res.get("error_messages", ["AST verification checks failed"])
+            feedback_notes = errs
+
+    return None
 
 def _infer_deterministic_schema(samples: list[dict], lang: str, schema_name: str) -> str:
     """Deterministic, zero-token runtime schema synthesizer for traffic payloads."""
@@ -2139,6 +2251,8 @@ def repair_unvalidated_boundary(
                 p2_base = "/".join(s2[:-1]) if len(s2) > 1 else p2
                 if p1_base and p1_base == p2_base:
                     return True
+                if p1 == p2_base or p2 == p1_base or (p1 and p2 and (p1.startswith(p2 + "/") or p2.startswith(p1 + "/"))):
+                    return True
             except Exception:
                 pass
             return False
@@ -2230,13 +2344,35 @@ def repair_unvalidated_boundary(
     except Exception:
         source_code = ""
 
-    rel_import = f"./schemas/{base_name}"
     rewritten = None
-    try:
-        if hasattr(_core, "ast_polyglot_rewrite"):
-            rewritten = _core.ast_polyglot_rewrite(source_code, ext, clean_endpoint, schema_name, rel_import)
-    except Exception:
-        rewritten = None
+    if client and source_code and hasattr(_core, "extract_precise_context"):
+        try:
+            samples_json = json.dumps(samples)
+            ctx_raw = _core.extract_precise_context(source_code, full_callsite, 0, clean_endpoint, samples_json, lang)
+            precise_ctx = json.loads(ctx_raw)
+            ai_res = ai_generate_patch(precise_ctx, client, max_retries=3)
+            if ai_res and ai_res.get("verification", {}).get("syntactically_valid"):
+                patch_func = ai_res.get("patch", "").strip()
+                orig_func = precise_ctx.get("enclosing_function_code", "").strip()
+                if patch_func and orig_func and orig_func in source_code:
+                    rewritten = source_code.replace(orig_func, patch_func, 1)
+                    if ai_res.get("schema"):
+                        schema_code = ai_res.get("schema")
+                        with open(schema_file, "w") as f:
+                            f.write(schema_code)
+                    imp = ai_res.get("import", "").strip()
+                    if imp and imp not in rewritten:
+                        rewritten = imp + "\n" + rewritten
+        except Exception:
+            rewritten = None
+
+    rel_import = f"./schemas/{base_name}"
+    if not rewritten:
+        try:
+            if hasattr(_core, "ast_polyglot_rewrite"):
+                rewritten = _core.ast_polyglot_rewrite(source_code, ext, clean_endpoint, schema_name, rel_import)
+        except Exception:
+            rewritten = None
 
     if not rewritten or rewritten == source_code:
         rewritten = source_code
