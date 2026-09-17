@@ -2070,13 +2070,13 @@ def _print_runtime_section(root_path: str, fmt: str = "cli") -> None:
         b = scan_runtime_boundaries(root_path)
         s = boundary_score(b)
         print()
-        print(f"BOUNDARY RUNTIME: score {s['score']}/100 ({s['grade']}), "
+        print(f"BERGENDY RUNTIME: score {s['score']}/100 ({s['grade']}), "
               f"{b['unvalidated']} unvalidated call(s) in {b['files_scanned']} files")
         for h in b["findings"][:8]:
             print(f"  [RUNTIME] {h['file']}:{h['line']} {h['client']} -> {h['url']}"
                   f"{' [any]' if h['has_any'] else ''}")
         if b["unvalidated"]:
-            print("  Run: boundary shield --fix --name <api> + import .parse() at callsites")
+            print("  Run: bergendy fix + import .parse() at callsites")
     except Exception:
         pass
 

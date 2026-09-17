@@ -21,7 +21,7 @@ def cmd_scan(args: Any) -> None:
     """Execute high-signal codebase audit of network boundaries and contract drift."""
     workdir = os.path.abspath(getattr(args, "path", ".") or ".")
     
-    print(header("Boundary Integrity Report"))
+    print(header("Bergendy Integrity Report"))
     print(f"Repository:  {dim(workdir)}")
 
     # 1. Scan for network boundaries

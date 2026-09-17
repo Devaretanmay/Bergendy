@@ -47,11 +47,11 @@
   "author": "Boundary Labs (Devaretanmay) <tanmaydevare@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Devaretanmay/Boundary.git"
+    "url": "https://github.com/Devaretanmay/Bergendy.git"
   },
-  "homepage": "https://github.com/Devaretanmay/Boundary#readme",
+  "homepage": "https://github.com/Devaretanmay/Bergendy#readme",
   "bugs": {
-    "url": "https://github.com/Devaretanmay/Boundary/issues"
+    "url": "https://github.com/Devaretanmay/Bergendy/issues"
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"

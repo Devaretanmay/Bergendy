@@ -177,7 +177,7 @@ def generate_trust_pr_markdown(meta: TrustPRMetadata) -> str:
     lines.extend(next_steps)
     lines.extend([
         "",
-        "_Generated automatically by [Boundary](https://github.com/Devaretanmay/Boundary) Continuous Autonomous Maintenance Engine._",
-        "— Hunt, Work bot",
+        "_Generated automatically by [Bergendy](https://github.com/Devaretanmay/Bergendy) Autonomous Runtime-Schema Engine._",
+        "— Bergendy",
     ])
     return "\n".join(lines)

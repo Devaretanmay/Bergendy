@@ -1,7 +1,7 @@
-# Boundary GitHub App daemon.
-# Build:  docker build -f docker/Dockerfile.app -t boundary-app:1.1.3 .
-# Run:    docker run -p 8080:8080 --env-file .env -v boundary-data:/data boundary-app:1.1.3
-# Requires BOUNDARY_WEBHOOK_SECRET. See docs/DEPLOY.md.
+# Bergendy GitHub App daemon.
+# Build:  docker build -f docker/Dockerfile.app -t bergendy-app:1.1.4 .
+# Run:    docker run -p 8080:8080 --env-file .env -v bergendy-data:/data bergendy-app:1.1.4
+# Requires BERGENDY_WEBHOOK_SECRET. See docs/DEPLOY.md.
 
 FROM rust:1.82-bookworm AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \

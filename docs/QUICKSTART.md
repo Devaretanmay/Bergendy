@@ -15,8 +15,8 @@ pip install bergendy
 Or build from source:
 
 ```bash
-git clone https://github.com/Devaretanmay/Boundary.git
-cd Boundary
+git clone https://github.com/Devaretanmay/Bergendy.git
+cd Bergendy
 maturin develop --release
 ```
 

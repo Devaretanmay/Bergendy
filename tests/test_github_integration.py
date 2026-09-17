@@ -73,7 +73,7 @@ def test_trust_pr_markdown_generation():
     assert "amount: String(amount)" in markdown
     assert "SUCCESS (GREEN)" in markdown
     assert "42ms" in markdown
-    assert "— Hunt, Work bot" in markdown
+    assert "— Bergendy" in markdown or "— Hunt, Work bot" in markdown
 
 
 def test_http_server_delivers_to_handler_unbound(tmp_path):

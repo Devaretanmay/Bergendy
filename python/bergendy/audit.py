@@ -132,7 +132,7 @@ def render_audit_cli(summary: dict[str, Any]) -> str:
             lines.append("")
 
     lines.append("=" * 80)
-    lines.append("Run `boundary fix <path> --provider <name>` to execute autonomous migration.")
+    lines.append("Run `bergendy fix <path> --provider <name>` to execute autonomous migration.")
     lines.append("=" * 80)
     return "\n".join(lines)
 

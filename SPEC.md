@@ -121,7 +121,7 @@ build an agent harness and start emitting these, open a PR against this file's
 
 ### Implementations
 
-- [Boundary](https://github.com/Devaretanmay/Boundary) - CLI + Python SDK, emits trailers automatically via `boundary commit`
+- [Bergendy](https://github.com/Devaretanmay/Bergendy) - CLI + Python SDK, emits trailers automatically via `bergendy commit`
 
 ## License
 

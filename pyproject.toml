@@ -9,7 +9,17 @@ description = "Bergendy: runtime schemas, drafted from your live traffic. See wh
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
-keywords = ["ai-agents", "developer-tools", "provenance", "audit", "sandbox", "isolation"]
+keywords = [
+    "ai-agents",
+    "ast",
+    "developer-tools",
+    "rust",
+    "zod",
+    "pydantic",
+    "open-telemetry",
+    "contract-testing",
+    "sandbox",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -33,9 +43,9 @@ bergendy = "bergendy.cli.main:cli"
 boundary = "bergendy.cli.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/Devaretanmay/Boundary"
-Repository = "https://github.com/Devaretanmay/Boundary"
-Issues = "https://github.com/Devaretanmay/Boundary/issues"
+Homepage = "https://github.com/Devaretanmay/Bergendy"
+Repository = "https://github.com/Devaretanmay/Bergendy"
+Issues = "https://github.com/Devaretanmay/Bergendy/issues"
 
 [tool.maturin]
 features = ["pyo3-binding"]

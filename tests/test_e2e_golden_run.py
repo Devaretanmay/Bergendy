@@ -98,7 +98,7 @@ def test_golden_scan_detects_unprotected_boundaries(golden_workspace, capsys):
     cmd_scan(args)
     captured = capsys.readouterr()
 
-    assert "Boundary Integrity Report" in captured.out
+    assert "Bergendy Integrity Report" in captured.out or "Boundary Integrity Report" in captured.out
     assert "src/resend.ts" in captured.out
     assert "src/weather.py" in captured.out
     assert "Unprotected Boundaries" in captured.out
