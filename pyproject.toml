@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bergendy"
-version = "1.1.4"
+version = "1.1.5"
 description = "Bergendy: runtime schemas, drafted from your live traffic. See what's open, draft schemas, patch callsites, prove in sandbox."
 readme = "README.md"
 requires-python = ">=3.10"

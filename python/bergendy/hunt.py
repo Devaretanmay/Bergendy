@@ -1828,13 +1828,101 @@ __all__ = [
     "LocalGitHubPublisher",
 ]
 
+def _infer_deterministic_schema(samples: list[dict], lang: str, schema_name: str) -> str:
+    """Deterministic, zero-token runtime schema synthesizer for traffic payloads."""
+    payload = {}
+    for s in samples:
+        body = s.get("response_body") if isinstance(s, dict) and "response_body" in s else s
+        if isinstance(body, dict):
+            payload.update(body)
+            break
+
+    if lang == "python":
+        lines = ["from pydantic import BaseModel", "from typing import Optional", ""]
+        lines.append(f"class {schema_name}(BaseModel):")
+        if not payload:
+            lines.append("    pass")
+        for k, v in payload.items():
+            safe_k = k if k.isidentifier() else f"field_{k}"
+            if isinstance(v, bool):
+                pytype = "bool"
+            elif isinstance(v, int):
+                pytype = "int"
+            elif isinstance(v, float):
+                pytype = "float"
+            elif isinstance(v, str):
+                pytype = "str"
+            elif isinstance(v, list):
+                pytype = "list"
+            elif isinstance(v, dict):
+                pytype = "dict"
+            else:
+                pytype = "Optional[str]"
+            lines.append(f"    {safe_k}: {pytype}")
+        return "\n".join(lines) + "\n"
+
+    elif lang == "go":
+        lines = [f"type {schema_name} struct {{"]
+        for k, v in payload.items():
+            field_name = "".join(part.capitalize() for part in k.split("_"))
+            if isinstance(v, bool):
+                gotype = "bool"
+            elif isinstance(v, int):
+                gotype = "int64"
+            elif isinstance(v, float):
+                gotype = "float64"
+            elif isinstance(v, str):
+                gotype = "string"
+            elif isinstance(v, list):
+                gotype = "[]interface{}"
+            elif isinstance(v, dict):
+                gotype = "map[string]interface{}"
+            else:
+                gotype = "interface{}"
+            lines.append(f'\t{field_name} {gotype} `json:"{k}"`')
+        lines.append("}")
+        return "\n".join(lines) + "\n"
+
+    else:
+        lines = ["import { z } from 'zod';", ""]
+        lines.append(f"export const {schema_name} = z.object({{")
+        for k, v in payload.items():
+            if isinstance(v, bool):
+                ztype = "z.boolean()"
+            elif isinstance(v, int):
+                ztype = "z.number().int()"
+            elif isinstance(v, float):
+                ztype = "z.number()"
+            elif isinstance(v, str):
+                if k == "status":
+                    ztype = f'z.enum(["{v}"]).or(z.string())'
+                elif "uuid" in k or k == "id" or k.endswith("_id") and len(v) > 20:
+                    ztype = "z.string()"
+                else:
+                    ztype = "z.string()"
+            elif isinstance(v, list):
+                ztype = "z.array(z.any())"
+            elif isinstance(v, dict):
+                ztype = "z.record(z.any())"
+            elif v is None:
+                ztype = "z.any().nullable()"
+            else:
+                ztype = "z.any()"
+            lines.append(f"  {k}: {ztype},")
+        lines.append("});")
+        type_export = schema_name[:-6] if schema_name.endswith("Schema") else schema_name
+        lines.append("")
+        lines.append(f"export type {type_export} = z.infer<typeof {schema_name}>;")
+        return "\n".join(lines) + "\n"
+
+
 def _human_schema_names(endpoint: str) -> tuple[str, str]:
     """Deterministic short human-like file/export names (no URL slug).
 
     Takes the last 2-3 meaningful path segments, drops scheme/host noise,
     versions, placeholders and numeric ids, and caps length so committed
-    files look hand-written, e.g. ``resend_email_response`` /
-    ``ResendEmailResponseSchema`` instead of a 150-char URL slug.
+    files look hand-written, e.g. ``emails`` / ``EmailsSchema`` or
+    ``payment_intents`` / ``PaymentIntentsSchema`` instead of a 150-char URL slug.
     """
     raw = (endpoint or "").strip().strip("'\"")
     path = raw
@@ -2020,7 +2108,6 @@ def repair_unvalidated_boundary(
     if not schema_name:
         schema_name = _default_schema
 
-
     clusters = {}
     try:
         def _matches(ep, req):
@@ -2029,11 +2116,32 @@ def repair_unvalidated_boundary(
             if ep in req or req in ep:
                 return True
             try:
-                p1 = urlparse(ep).path
-                p2 = urlparse(req).path
-                return bool(p1 and p2 and (p1 == p2 or p1.rstrip('/') == p2.rstrip('/')))
+                p1 = urlparse(ep).path.strip("/")
+                p2 = urlparse(req).path.strip("/")
+                if p1 == p2:
+                    return True
+                s1 = [s for s in p1.split("/") if s]
+                s2 = [s for s in p2.split("/") if s]
+                if len(s1) == len(s2):
+                    match = True
+                    for a, b in zip(s1, s2):
+                        if a == b:
+                            continue
+                        if a.startswith("$") or a.startswith(":") or a.startswith("{") or b.startswith("$") or b.startswith(":") or b.startswith("{"):
+                            continue
+                        if ("_" in a and len(a) > 5 and a.split("_", 1)[0].isalpha()) or ("_" in b and len(b) > 5 and b.split("_", 1)[0].isalpha()) or (a.isalnum() and b.isalnum() and (len(a) > 10 or len(b) > 10)):
+                            continue
+                        match = False
+                        break
+                    if match:
+                        return True
+                p1_base = "/".join(s1[:-1]) if len(s1) > 1 else p1
+                p2_base = "/".join(s2[:-1]) if len(s2) > 1 else p2
+                if p1_base and p1_base == p2_base:
+                    return True
             except Exception:
-                return False
+                pass
+            return False
 
         knowledge_dir = os.path.join(repo_dir, ".boundary", "knowledge")
         exchange_file = os.path.join(knowledge_dir, "exchanges.jsonl")
@@ -2071,15 +2179,26 @@ def repair_unvalidated_boundary(
     ext = os.path.splitext(callsite_file)[1].lstrip(".")
     lang = "python" if ext == "py" else "go" if ext == "go" else "java" if ext == "java" else "ruby" if ext == "rb" else "typescript"
 
-    # Final 1% polish: upgrade the deterministic short name with the AI
+    # Upgrade the deterministic short name with the AI if available
     if client and samples and not explicit_schema:
-        ai_names = _ai_human_schema_name(client, clean_endpoint, samples)
-        if ai_names:
-            base_name, schema_name = ai_names
+        try:
+            ai_names = _ai_human_schema_name(client, clean_endpoint, samples)
+            if ai_names:
+                base_name, schema_name = ai_names
+        except Exception:
+            pass
 
+    schema_code = None
     if client and samples:
-        schema_code = generate_schema_for_traffic(client, clean_endpoint, samples, lang, schema_name)
-    else:
+        try:
+            schema_code = generate_schema_for_traffic(client, clean_endpoint, samples, lang, schema_name)
+        except Exception:
+            schema_code = None
+
+    if not schema_code and samples:
+        schema_code = _infer_deterministic_schema(samples, lang, schema_name)
+
+    if not schema_code:
         return {
             "success": False,
             "reason": "Missing traffic telemetry samples for endpoint",
