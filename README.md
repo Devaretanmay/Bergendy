@@ -1,19 +1,39 @@
 # Bergendy
 
-Runtime schemas, drafted from your live traffic.
+Runtime schemas, drafted from your live LLM API traffic.
 
-APIs change. Bergendy watches what your app actually receives,
-drafts Zod / Pydantic / Go schemas for it, patches your callsites,
-and proves the result in a sandboxed replay. No network, no side effects.
+OpenAI changes their function calling schema. Anthropic updates their response format. Your AI-generated wrapper code crashes in production.
+
+Bergendy watches what your app actually receives, drafts Zod / Pydantic / Go schemas for it, patches your callsites via AST rewriting, and proves the result in a sandboxed replay. Zero real network. Zero side effects.
 
 ```bash
 pip install bergendy
 
 bergendy init
-bergendy see          # what's open
-bergendy fix          # draft + patch + prove, in one step
+bergendy see          # find open LLM and external API calls
+bergendy fix          # draft + patch + prove, in one command
 bergendy watch        # keep it clean on main
 ```
+
+## Built for LLM wrapper teams
+
+If your code calls OpenAI, Anthropic, Groq, Mistral, or Cohere, Bergendy catches unvalidated API boundaries before the provider changes their schema and breaks your wrapper.
+
+### Run a free scan on your own codebase
+
+No signup. No cloud backend. No repo access needed. Just run:
+
+```bash
+pip install bergendy
+cd your-project
+bergendy see
+```
+
+It will show you every unvalidated external API call in your codebase. If it finds LLM API calls (OpenAI, Anthropic, etc.), you'll see exactly where they are.
+
+Share your results with us: post a screenshot on X and tag `@bergendy`.
+
+---
 
 ## Four verbs. That's the product.
 
@@ -28,10 +48,10 @@ Plus one passive mode: **Watch** — keep unguarded calls off `main`.
 
 ## The Problem
 
-Every application depends on external services: payment gateways, AI providers, and third-party REST APIs. Three failure modes recur across codebases:
+AI coding tools (Cursor, Copilot, Devin) write LLM wrapper code fast, but they leave network boundaries open: raw `fetch()`, `requests.get()`, or SDK calls casting responses to `any` or unchecked dicts. Three failure modes recur across codebases:
 
-1. **Open Calls**: Network calls cast JSON payloads to `any`, untyped dictionaries, or unchecked structs. When an upstream provider modifies a key or changes nullability, code crashes at downstream access points.
-2. **Context Leakage**: Generating schemas from raw telemetry envelopes causes models to incorporate transport metadata (`request_method`, `request_headers`) rather than the actual API response object.
+1. **Open Calls**: Unvalidated JSON payloads. When an upstream LLM provider or API modifies a key, adds union types, or changes nullability, code crashes at downstream access points.
+2. **Context Leakage**: Generating schemas from raw telemetry envelopes causes models to hallucinate transport metadata (`request_method`, `request_headers`) rather than the actual API response object.
 3. **Silent Error Swallowing**: Automated patches that wrap calls in silent `try/catch` or `except: pass` blocks pass tests in development but discard critical runtime errors in production.
 
 Bergendy addresses all three through static AST inspection, pure payload isolation, and sandboxed replay.
@@ -107,8 +127,8 @@ bergendy watch
 
 | Language | Client Libraries | Generated Schema Type | Validation Target |
 | :--- | :--- | :--- | :--- |
-| **TypeScript / JS** | `fetch`, `axios`, `@bergendy/nextjs` | `z.object({...})` | [Zod](https://zod.dev) |
-| **Python** | `requests`, `httpx`, `aiohttp` | `class Schema(BaseModel):` | [Pydantic v2](https://docs.pydantic.dev) |
+| **TypeScript / JS** | `fetch`, `axios`, `openai`, `@anthropic-ai/sdk` | `z.object({...})` | [Zod](https://zod.dev) |
+| **Python** | `requests`, `httpx`, `aiohttp`, `openai`, `anthropic` | `class Schema(BaseModel):` | [Pydantic v2](https://docs.pydantic.dev) |
 | **Go** | `net/http`, `http.Client` | `type Schema struct` with JSON tags | Standard Library |
 
 ---
