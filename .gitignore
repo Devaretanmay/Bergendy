@@ -16,6 +16,7 @@ build/
 
 # Boundary transient state
 .boundary/
+.bergendy/
 
 # Language SDK artifacts
 sdk/typescript/node_modules/
