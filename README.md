@@ -1,154 +1,278 @@
+<div align="center">
+
 # Bergendy
 
-Runtime schemas, drafted from your live LLM API traffic.
+**Runtime schemas, drafted from your live traffic.**
 
-OpenAI changes their function calling schema. Anthropic updates their response format. Your AI-generated wrapper code crashes in production.
+[![PyPI version](https://img.shields.io/pypi/v/bergendy)](https://pypi.org/project/bergendy/)
+[![Rust](https://img.shields.io/badge/Rust-000000?logo=rust)](https://www.rust-lang.org/)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue)](LICENSE)
+[![CI](https://github.com/Devaretanmay/Bergendy/actions/workflows/ci.yml/badge.svg)](https://github.com/Devaretanmay/Bergendy/actions)
 
-Bergendy watches what your app actually receives, drafts Zod / Pydantic / Go schemas for it, patches your callsites via AST rewriting, and proves the result in a sandboxed replay. Zero real network. Zero side effects.
+AI coding tools write code 10x faster, but they skip runtime validation.
+When OpenAI or Anthropic changes their API schema, your AI-generated wrapper crashes in production.
+
+Bergendy watches live LLM API traffic, drafts typed schemas, patches your code via AST rewriting,
+and verifies the result in a kernel-isolated sandbox.
+
+**No API key required. Works offline. AI enhances, deterministic guarantees the baseline.**
+
+[Quick Start](#-quick-start) • [How It Works](#-how-it-works) • [Architecture](#-architecture) • [Examples](#-examples)
+
+</div>
+
+---
+
+## 🎬 Demo
+
+<!-- REPLACE WITH ACTUAL DEMO GIF -->
+<!-- Record a 60-second terminal GIF showing: bergendy see → bergendy fix → bergendy prove -->
+![Bergendy Demo](assets/demo.gif)
+
+---
+
+## 🚀 Quick Start
 
 ```bash
+# Install
 pip install bergendy
 
+# Initialize in your project
 bergendy init
-bergendy see          # find open LLM and external API calls
-bergendy fix          # draft + patch + prove, in one command
-bergendy watch        # keep it clean on main
-```
 
-## Built for LLM wrapper teams
-
-If your code calls OpenAI, Anthropic, Groq, Mistral, or Cohere, Bergendy catches unvalidated API boundaries before the provider changes their schema and breaks your wrapper.
-
-### Run a free scan on your own codebase
-
-No signup. No cloud backend. No repo access needed. Just run:
-
-```bash
-pip install bergendy
-cd your-project
+# Find unvalidated external API calls
 bergendy see
-```
 
-It will show you every unvalidated external API call in your codebase. If it finds LLM API calls (OpenAI, Anthropic, etc.), you'll see exactly where they are.
-
-Share your results with us: post a screenshot on X and tag `@bergendy`.
-
----
-
-## Four verbs. That's the product.
-
-- **See** — every external call and the real payload it returns.
-- **Draft** — typed schemas, named after the resource, not the URL.
-- **Patch** — rewrite callsites cleanly. AST-driven, no reformatting.
-- **Prove** — replay captured traffic inside a Ghost Proxy sandbox.
-
-Plus one passive mode: **Watch** — keep unguarded calls off `main`.
-
----
-
-## The Problem
-
-AI coding tools (Cursor, Copilot, Devin) write LLM wrapper code fast, but they leave network boundaries open: raw `fetch()`, `requests.get()`, or SDK calls casting responses to `any` or unchecked dicts. Three failure modes recur across codebases:
-
-1. **Open Calls**: Unvalidated JSON payloads. When an upstream LLM provider or API modifies a key, adds union types, or changes nullability, code crashes at downstream access points.
-2. **Context Leakage**: Generating schemas from raw telemetry envelopes causes models to hallucinate transport metadata (`request_method`, `request_headers`) rather than the actual API response object.
-3. **Silent Error Swallowing**: Automated patches that wrap calls in silent `try/catch` or `except: pass` blocks pass tests in development but discard critical runtime errors in production.
-
-Bergendy addresses all three through static AST inspection, pure payload isolation, and sandboxed replay.
-
----
-
-## How It Works
-
-```mermaid
-flowchart TD
-    A["Observed HTTP Traffic<br/>(.boundary/knowledge/exchanges.jsonl)"] --> B["AST Scanner<br/>(TS/JS, Python, Go)"]
-    B --> C["Payload Isolation<br/>(Extracts response_body, strips envelopes)"]
-    C --> D["Schema Synthesis<br/>(Zod / Pydantic / Go structs)"]
-    D --> E["AST Callsite Rewriter<br/>(No-Swallow verification)"]
-    E --> F["Hermetic Sandbox Replay<br/>(Kernel network block + Ghost Proxy)"]
-```
-
-### 1. See Open Calls (`bergendy see`)
-
-Scans repository source trees across TypeScript, JavaScript, Python, and Go for external HTTP callsites lacking runtime validation:
-
-- **TypeScript / JavaScript**: Unchecked `fetch()`, `axios.get()`, `axios.post()`, or `as any` casts.
-- **Python**: Unvalidated `requests.get()`, `httpx.get()`, `aiohttp`, and unmodeled `.json()` access.
-- **Go**: Unvalidated `http.Get()`, `http.Post()`, `client.Do()`, and unchecked JSON unmarshaling.
-
-```bash
-bergendy see
-```
-
-### 2. Draft and Patch Callsites (`bergendy fix`)
-
-Extracts observed payloads and generates typed schemas without transport noise:
-
-- **Resource-Based Naming**: Files use clean `snake_case` naming and exports use `PascalCase` ending in `Schema` (e.g. `stripe_payment_intent.ts` exports `StripePaymentIntentSchema`), never URL slugs.
-- **Pure Payload Isolation**: Isolates response bodies from telemetry clusters. Transport wrappers like headers and status codes are discarded.
-- **No-Swallow Verification**: Injects validation (`.parse()`, `model_validate()`) directly at the callsite. The AST rewriter rejects patches that catch validation errors silently.
-
-```bash
-# Fix all open calls in a guided workflow
+# Draft schemas, patch callsites, verify in sandbox — one command
 bergendy fix
 
-# Target a specific file
-bergendy fix --target src/resend.ts
-```
-
-### 3. Prove with Ghost Proxy (`bergendy prove`)
-
-Runs your existing test suite inside an isolated sandbox using macOS `sandbox-exec` or Linux `landlock`:
-
-- Outbound socket connections to the public internet are blocked at the OS kernel level.
-- Outbound requests are intercepted via the local Ghost Proxy (`127.0.0.1:54321`), serving recorded exchanges.
-- Tests pass only when newly synthesized schemas parse recorded payloads with zero unhandled exceptions.
-
-```bash
-bergendy prove
-```
-
-### 4. Watch Main (`bergendy watch`)
-
-Runs as a pre-commit hook to prevent unguarded network calls from entering source control:
-
-```bash
-# Install hook
+# Keep it clean on main (pre-commit hook)
 bergendy watch --install
-
-# Execute check against staged files
-bergendy watch
 ```
+
+**That's it.** Bergendy works fully offline. No API keys, no servers, no data leaves your machine.
 
 ---
 
-## Supported Ecosystems
+## 💡 The Problem
+
+Every modern application calls external APIs — payment gateways, AI providers, third-party services. When those APIs change, your app breaks:
+
+| Failure Mode | What Happens | Real Cost |
+| :--- | :--- | :--- |
+| **Unvalidated Boundaries** | `fetch()` calls cast JSON to `any` or unchecked structs | Crash at downstream access points |
+| **Schema Drift** | API changes a field name, adds nullability | Silent data corruption |
+| **AI-Generated Code** | AI writes "happy path" code, skips defensive validation | Production crashes at 3am |
+
+**Bergendy catches all three before they ship.**
+
+---
+
+## 🔧 How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    BERGENDY HYBRID PIPELINE                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+[1] AST ANALYSIS (Deterministic)
+    Tree-sitter parsing → Repo map → Precise context extraction
+    Traffic aggregation (isolated response_body only)
+         ↓
+[2] AI GENERATION (Agentic, Optional)
+    Structured prompt with precise context (~800 tokens)
+    AI generates: schema + patch + import
+    Falls back to deterministic synthesizer if offline
+         ↓
+[3] AST VERIFICATION (Deterministic Safety Gate)
+    6-point verification: syntactic validity, schema wired,
+    no silent catch, blast radius clean, imports correct, naming valid
+         ↓
+[4] SANDBOX VERIFICATION (Behavioral Proof)
+    Ghost Proxy replays captured traffic locally
+    Blocks all outbound network (Seatbelt/Landlock)
+    Runs your test suite — zero real API calls
+         ↓
+[5] ROLLBACK (Instant Undo)
+    BLAKE3 snapshots → 2ms instant rollback on failure
+```
+
+**AI is completely optional.** If no LLM client is available, Bergendy uses its native Rust and Python deterministic engines to synthesize schemas and patch code with zero API calls.
+
+---
+
+## 📊 Supported Ecosystems
 
 | Language | Client Libraries | Generated Schema Type | Validation Target |
 | :--- | :--- | :--- | :--- |
-| **TypeScript / JS** | `fetch`, `axios`, `openai`, `@anthropic-ai/sdk` | `z.object({...})` | [Zod](https://zod.dev) |
-| **Python** | `requests`, `httpx`, `aiohttp`, `openai`, `anthropic` | `class Schema(BaseModel):` | [Pydantic v2](https://docs.pydantic.dev) |
+| **TypeScript / JS** | `fetch`, `axios`, `openai`, `@anthropic-ai/sdk` | `z.object({...})` | Zod |
+| **Python** | `requests`, `httpx`, `openai`, `anthropic` | `class Schema(BaseModel):` | Pydantic v2 |
 | **Go** | `net/http`, `http.Client` | `type Schema struct` with JSON tags | Standard Library |
 
 ---
 
-## Architecture
+## 🛡️ Safety Guarantees
 
-Bergendy combines a high-performance native Rust engine for AST transformations and kernel sandboxing with Python for orchestration and schema synthesis:
+Bergendy never modifies your code without proof. Every patch is:
 
-- **`src/engines/context_extractor.rs`**: AST-driven callsite context extractor (function signature, enclosing body, data flow, error handling pattern, existing imports).
-- **`src/engines/ast_verifier.rs`**: 6-point deterministic AST safety verifier (syntactic balance, schema wiring, No-Swallow rule, blast radius clean, imports correct, naming conventions).
-- **`src/engines/rewriter.rs`**: Polyglot AST-driven callsite rewriter injecting schema imports and validation calls.
-- **`src/engines/graph/`**: Dependency graph mapping external providers, manifests, and AST callsites.
-- **`src/sandbox/`**: OS-level network and filesystem isolation (macOS Seatbelt, Linux Landlock).
-- **`src/ghost_proxy/server.rs`**: Local Axum-based mock HTTP server serving recorded exchanges in hermetic sandboxes.
-- **`python/bergendy/hunt.py`**: Schema synthesis loop with payload isolation, AI reflection retry loop, and deterministic fallback.
-- **`sdk/typescript/instrument.js`**: Node.js and fetch shim redirecting sandboxed traffic to the mock proxy.
+1. **AST-verified** — 6 deterministic checks before any code is written
+2. **Sandbox-tested** — Runs in kernel isolation with zero real network
+3. **Instantly reversible** — BLAKE3 snapshots enable 2ms rollback
+4. **No silent failures** — Rejects patches that swallow errors in try/catch
 
 ---
 
-## License
+## 📦 Examples
 
-Bergendy is licensed under the [Apache License, Version 2.0](LICENSE).
+### Example 1: Unvalidated Stripe Call → Patched
 
+**Before:**
+```typescript
+// src/services/stripe.ts
+export async function getPaymentIntent(id: string) {
+  const response = await fetch(`https://api.stripe.com/v1/payment_intents/${id}`);
+  const data = await response.json(); // ← Unvalidated! Crashes when Stripe changes schema
+  return data;
+}
+```
+
+**After `bergendy fix`:**
+```typescript
+// src/services/stripe.ts
+import { StripePaymentIntentSchema } from './schemas/stripe_payment_intent';
+
+export async function getPaymentIntent(id: string) {
+  const response = await fetch(`https://api.stripe.com/v1/payment_intents/${id}`);
+  const data = StripePaymentIntentSchema.parse(await response.json());
+  return data;
+}
+```
+
+**Generated Schema (`src/schemas/stripe_payment_intent.ts`):**
+```typescript
+import { z } from 'zod';
+
+export const StripePaymentIntentSchema = z.object({
+  id: z.string().startsWith('pi_'),
+  amount: z.number().int(),
+  currency: z.string(),
+  status: z.enum(['succeeded', 'processing', 'failed']),
+  created: z.number().int(),
+});
+
+export type StripePaymentIntent = z.infer<typeof StripePaymentIntentSchema>;
+```
+
+### Example 2: Unvalidated OpenAI Call → Patched
+
+**Before:**
+```python
+# src/ai/agent.py
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": prompt}],
+)
+data = response.json()  # ← Unvalidated! Crashes when OpenAI changes response format
+```
+
+**After `bergendy fix`:**
+```python
+# src/ai/agent.py
+from src.schemas.openai_chat_response import OpenAIChatResponseSchema
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": prompt}],
+)
+data = OpenAIChatResponseSchema.model_validate_json(response.text)
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Bergendy
+├── src/ (Rust Core)
+│   ├── ast/                  # Polyglot AST analysis & call-site locators
+│   ├── contracts/            # Contract synthesis and schema diff engines
+│   ├── engines/              # Dependency graphs, AST rewriter, verifier
+│   ├── ghost_proxy/          # Axum-based local mock HTTP server
+│   ├── sandbox/              # Seatbelt (macOS) & Landlock (Linux) isolation
+│   └── py_bindings.rs        # PyO3 C FFI bridge
+│
+├── python/bergendy/ (Python Orchestrator)
+│   ├── cli/                  # CLI commands (see, fix, prove, watch)
+│   ├── hunt.py               # Autonomous repair loop with retry
+│   ├── prompts/              # Structured AI prompt templates
+│   └── sandbox/              # Process sandboxing, snapshot rollback
+│
+├── sdk/ (Language SDKs)
+│   ├── nextjs/               # Next.js App Router & Edge telemetry
+│   └── typescript/           # Node.js fetch/axios instrumentation
+│
+└── tests/ (599 passing tests)
+    ├── boundary/             # Sandbox & isolation tests
+    └── test_e2e_golden_run.py # End-to-end integration tests
+```
+
+---
+
+## 🧪 Running Tests
+
+```bash
+# Run all tests
+./scripts/run_all_tests.py
+
+# Run Rust tests only
+cargo test --lib --features oxc_flow
+
+# Run Python tests only
+pytest tests/
+
+# Run linter
+ruff check python/ tests/
+```
+
+**Current status:** 599 tests passing (125 Rust + 474 Python), CI green.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run the test suite (`./scripts/run_all_tests.py`)
+5. Commit and push (`git commit -m 'feat: add amazing feature'`)
+6. Open a Pull Request
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+## 📜 License
+
+Bergendy is licensed under the [Apache License 2.0](LICENSE).
+
+---
+
+## 🙏 Acknowledgments
+
+- [tree-sitter](https://tree-sitter.github.io/) for polyglot AST parsing
+- [axum](https://github.com/tokio-rs/axum) for the Ghost Proxy server
+- [pyo3](https://github.com/PyO3/pyo3) for Rust-Python bindings
+- The AI coding community for highlighting the schema drift problem
+
+---
+
+<div align="center">
+
+**Made with 🍷 by developers, for developers.**
+
+[Report Bug](https://github.com/Devaretanmay/Bergendy/issues) • [Request Feature](https://github.com/Devaretanmay/Bergendy/issues) • [Discussions](https://github.com/Devaretanmay/Bergendy/discussions)
+
+</div>

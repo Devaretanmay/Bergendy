@@ -1,25 +1,33 @@
 # Contributing to Bergendy
 
-We welcome contributions to the Bergendy source-available runtime!
+Thank you for considering a contribution to Bergendy!
 
-## Licensing & License Agreement
+## Getting Started
 
-By contributing to Bergendy, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE), and to the terms of the [CLA](CLA.md).
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/Bergendy.git`
+3. Install dependencies: `pip install -e .` and `maturin develop`
+4. Run tests: `./scripts/run_all_tests.py`
 
-## Development Setup
+## Code Style
 
-1. **Prerequisites**: Python >= 3.10, Rust >= 1.75, `maturin` (`pip install maturin`).
-2. **Build Native Extension**:
-   ```bash
-   maturin develop
-   ```
-3. **Run Tests**:
-   ```bash
-   python3 -m pytest
-   ```
+- **Rust:** Follow [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
+- **Python:** Follow [PEP 8](https://peps.python.org/pep-0008/), use `ruff` for linting
+- **Commits:** Use [Conventional Commits](https://www.conventionalcommits.org/)
 
-## Pull Request Guidelines
+## Pull Request Process
 
-- Ensure all existing unit and E2E tests pass.
-- Write unit tests for new features or bug fixes.
-- Keep changes focused, surgical, and well-documented.
+1. Create a feature branch
+2. Make your changes
+3. Add tests for new functionality
+4. Run the full test suite
+5. Update documentation if needed
+6. Open a PR with a clear description
+
+## Reporting Bugs
+
+Open an issue with:
+- Bergendy version (`bergendy --version`)
+- Operating system
+- Steps to reproduce
+- Expected vs actual behavior
